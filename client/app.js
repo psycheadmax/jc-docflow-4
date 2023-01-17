@@ -1,22 +1,62 @@
-import React, { Component } from "react";
-import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route } from "react-router-dom";
-import Header from "./components/header";
-import Index from "./components/index";
-import Single from "./components/single";
-import New from "./components/new";
-import Edit from "./components/edit";
+// import { useState, useMemo } from 'react'
+// import { FilesViewer } from './FilesViewer'
 
-const App = () => (
-  <Router>
-    <div>
-      <Header />
-      <Route path="/" exact component={Index} />
-      <Route path="/new" exact component={New} />
-      <Route path="/post/:id" exact component={Single} />
-      <Route path="/edit/:id" exact component={Edit} />
-    </div>
-  </Router>
-);
+// const fs = window.require('fs')
+// const pathModule = window.require('path')
 
-ReactDOM.render(<App />, document.getElementById("app"));
+import React from 'react';
+import docGen from './docGen';
+import GeneralFace from './GeneralFace';
+
+class App extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      lastName: 'ЛШТШФУМ',
+      firstName: 'Ащьф',
+      middleName: 'Иванович',
+      birthday: '07.12.2022',
+      gender: 'male'
+      // docTemplate(s): ???
+    }
+
+    this.changeFormHandler = this.changeFormHandler.bind(this)
+    this.docGenerator = this.docGenerator.bind(this)
+    this.insertClient = this.insertClient.bind(this)
+  }
+
+  changeFormHandler(e) {
+    const value = e.target.value
+    this.setState({
+        // ...state, required when using React.useState
+        [e.target.id]: value
+    })
+}
+
+  docGenerator() {
+    docGen(this.state)
+  }
+
+  insertClient() {
+    InsertClient()
+  }
+
+  render() {
+    return (
+      <div className="App container">
+        <GeneralFace 
+            changeHandler={this.changeFormHandler}
+            firstName={this.state.firstName}
+            lastName={this.state.lastName}
+            middleName={this.state.middleName}
+            gender={this.state.gender}
+          />
+        <hr className="mb-4" />
+        <button className="btn btn-primary btn-lg btn-block" type="submit" onClick={this.docGenerator} >OK</button>
+        {/* <button className="btn btn-primary btn-lg btn-block" type="submit" onClick={this.inserClient} >OK</button> */}
+      </div>
+    )
+  }
+}
+
+export default App;
