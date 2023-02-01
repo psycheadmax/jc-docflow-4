@@ -1,12 +1,14 @@
-// import { useState, useMemo } from 'react'
-// import { FilesViewer } from './FilesViewer'
-
-// const fs = window.require('fs')
-// const pathModule = window.require('path')
-
 import React from 'react';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} from "react-router-dom"
+
 import docGen from './docGen';
-import GeneralFace from './GeneralFace';
+import SearchAndResults from './components/SearchAndResults';
+import PersonCard from './components/PersonCard'
 
 class App extends React.Component {
   constructor(props) {
@@ -20,40 +22,54 @@ class App extends React.Component {
       // docTemplate(s): ???
     }
 
-    this.changeFormHandler = this.changeFormHandler.bind(this)
     this.docGenerator = this.docGenerator.bind(this)
-    this.insertClient = this.insertClient.bind(this)
   }
 
-  changeFormHandler(e) {
-    const value = e.target.value
-    this.setState({
-        // ...state, required when using React.useState
-        [e.target.id]: value
-    })
-}
+  
 
   docGenerator() {
     docGen(this.state)
   }
 
-  insertClient() {
-    InsertClient()
-  }
-
   render() {
     return (
       <div className="App container">
-        <GeneralFace 
-            changeHandler={this.changeFormHandler}
-            firstName={this.state.firstName}
-            lastName={this.state.lastName}
-            middleName={this.state.middleName}
-            gender={this.state.gender}
+      <Router>
+      <div>
+        <ul>
+          <li>
+            <Link to="/create">Person</Link>
+          </li>
+          <li>
+            <Link to="/search">Search</Link>
+          </li>
+        </ul>
+
+        <Switch>
+          <Route exact path="/create">
+            <PersonCard 
+              // firstName={this.state.firstName}
+              // lastName={this.state.lastName}
+              // middleName={this.state.middleName}
+              // gender={this.state.gender}
+            />
+          </Route>
+          <Route path="/search">
+            <SearchAndResults />
+          </Route>
+          <Route path="/person/:id" render={(props) => (
+            <PersonCard {...props} />
+          )}
           />
-        <hr className="mb-4" />
-        <button className="btn btn-primary btn-lg btn-block" type="submit" onClick={this.docGenerator} >OK</button>
-        {/* <button className="btn btn-primary btn-lg btn-block" type="submit" onClick={this.inserClient} >OK</button> */}
+
+          
+
+        </Switch>
+      </div>
+    </Router>        
+        
+        {/* <button className="btn btn-danger btn-lg btn-block" onClick={this.insertPerson} >Insert</button> MOVED to CreatePerson component*/}
+        {/* <button className="btn btn-primary btn-lg btn-block" type="submit" onClick={this.docGenerator} >OK</button> NEED tomove to document generator component*/}
       </div>
     )
   }
