@@ -38,25 +38,30 @@ app.get("/api/persons", (req, res) => {
   });
 });
 
+// Search persons
+app.post("/api/search", (req, res) => {
+  const data = {
+    lastName: req.body.lastName,
+    firstName: req.body.firstName,
+    middleName: req.body.middleName,
+  }
+  Person.find(data).then(persons => {
+    res.json(persons);
+  });
+});
+
 // Get One of Our persons
 app.get("/api/persons/:id", (req, res) => {
   Person.findOne({ _id: req.params.id }).then(person => {
     res.json(person);
   });
-  console.log('server: get one of our persons scenario:')
-  console.log(person)
-  console.log(req.params.id)
 });
 
 // Create and Update person
 app.post("/api/persons", (req, res) => {
   const data = {
     id: req.body.id,
-    lastName: req.body.lastName,
-    firstName: req.body.firstName,
-    middleName: req.body.middleName,
-    //   birth: Date, 
-    // gender: req.body.gender
+    ...req.body
   };
   Person.findOne({ _id: req.body.id }, (err, person) => { 
     if (person) {
@@ -79,6 +84,5 @@ app.post("/api/persons/:id", (req, res) => {
     res.json({ message: "Person was deleted!" });
   });
 });
-
 
 app.listen(3333, () => console.log("Server is running on port 3333"));
