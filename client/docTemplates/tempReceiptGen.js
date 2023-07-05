@@ -1,5 +1,13 @@
-function tempReceiptGen() {
-    /*
-    function that generate file and make all changings to DB if needed
-    */
+import React from 'react'
+import { PDFViewer } from '@react-pdf/renderer';
+import './receipt/styles.css'
+
+function TempReceiptGen({dangerousData}) {
+   return(
+      <PDFViewer>
+         <div dangerouslySetInnerHTML={{__html: dangerousData}} />
+      </PDFViewer>
+   )
 }
+
+export default TempReceiptGen

@@ -36,7 +36,7 @@ onSearchFormChange(e) {
     ],
     [e.target.id]: e.target.value,
   });
-  const debounceFn = debounce(this.search, 2000)
+  const debounceFn = debounce(this.search, 500)
   debounceFn()
 }
 
@@ -101,4 +101,4 @@ search() {
   }
 }
 
-export default withRouter(SearchAndResults)
+export { SearchAndResults }

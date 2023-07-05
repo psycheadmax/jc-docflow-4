@@ -1,17 +1,37 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from "react-router-dom";
+import axios from 'axios'
 
-function CheckBeforeCreate(props) {
+function CheckBeforeCreate({receivePerson, person}) {
+    const [persons, setPersons] = useState([])
+
     const givePerson = (person) => {
-        props.receivePerson(person) // YEAH!!!!
+        receivePerson(person) // YEAH!!!!
     }
-    const len = props.persons.length
+
+    useEffect(() => {
+        search()
+      }, [person]);
+
+    const len = persons.length
+
+    function search() {
+        const data = {
+            lastName: { $regex: person.lastName },
+            firstName: { $regex: person.firstName },
+            middleName: { $regex: person.middleName },
+        }
+        axios.post("http://localhost:3333/api/search", data).then(persons => {
+            setPersons(persons.data)
+        });
+    }
+
     return (
         <div>
-            <h3>There are {len} such entries in DB</h3>
+            <h3>Найдено похожих записей в БД: {len}</h3>
                 <ul className="list-group">
-                { props.persons.map((person, index) => (
-                            (index < 3) 
+                { persons.map((person, index) => (
+                            (index < 10) 
                             ?  
                             <li className="list-group-item" key={index} id={person._id}> 
                                 <Link onClick={() => givePerson(person)} to={{
@@ -29,4 +49,4 @@ function CheckBeforeCreate(props) {
     )
 }
 
-export default CheckBeforeCreate
+export { CheckBeforeCreate }

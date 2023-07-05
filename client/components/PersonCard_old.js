@@ -1,5 +1,4 @@
 import React from 'react'
-import { withRouter } from 'react-router-dom';
 import axios from 'axios'
 import throttle from 'lodash/throttle'
 import debounce from 'lodash/debounce'
@@ -194,7 +193,6 @@ class PersonCard extends React.Component {
     }
 
     render() {
-        console.log(this.state)
         return (
             <div className="component">
             <form>
