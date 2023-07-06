@@ -1,20 +1,28 @@
+// TODO later
+// add require('express').Router() https://dev.to/albertofdzm/mongoose-mongodb-and-express-596
+// add morgan logger
 require('dotenv').config()
 const dbURI = process.env['DB_URI']
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const app = express();
+const path = require("path")
+
+const PORT = 3333
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+
 // Import Model
-const Post = require("./models/Post");
-const Client = require("./models/Client");
+const Person = require("./models/Person");
+const Case = require("./models/Case");
+const AnyDoc = require("./models/AnyDoc")
 
 // Connect to MongoDB
 mongoose.connect(
-  dbURI,
+  dbURI, { useNewUrlParser: true, useUnifiedTopology: true},
   () => console.log("MongoDB is connected")
 );
 
@@ -29,90 +37,126 @@ app.use((req, res, next) => {
   next();
 });
 
-// Get all of our posts
-app.get("/api/posts", (req, res) => {
-  Post.find({}).then(posts => {
-    res.json(posts);
+// PERSONS =======================================
+// Get all of our persons
+app.get("/api/persons", (req, res) => {
+  Person.find({})
+  .populate('cases')
+  .then(persons => {
+    res.json(persons);
   });
 });
-      // Get all of our clients
-      app.get("/api/clients", (req, res) => {
-        Client.find({}).then(clients => {
-          res.json(clients);
-        });
-      });
 
-// Get One of Our posts
-app.get("/api/posts/:id", (req, res) => {
-  Post.findOne({ _id: req.params.id }).then(post => {
-    res.json(post);
-  });
-});
-      // Get One of Our clients
-      app.get("/api/clients/:id", (req, res) => {
-        Client.findOne({ _id: req.params.id }).then(client => {
-          res.json(client);
-        });
-      });
-
-// Create and Update post
-app.post("/api/posts", (req, res) => {
+// Search persons
+app.post("/api/search", (req, res) => {
   const data = {
-    title: req.body.title,
-    content: req.body.content
+    lastName: req.body.lastName,
+    firstName: req.body.firstName,
+    middleName: req.body.middleName,
+  }
+  Person.find(data)
+  .populate('cases')
+  .then(persons => {
+    res.json(persons);
+  });
+});
+
+// Get One of Our persons
+app.get("/api/persons/:id", (req, res) => {
+  Person.findOne({ _id: req.params.id })
+  .populate('cases')
+  .then(person => {
+    res.json(person);
+  });
+});
+
+// Create and Update person
+app.post("/api/persons", (req, res) => {
+  const data = {
+    id: req.body.id,
+    ...req.body
   };
-  Post.findOne({ _id: req.body.id }, (err, post) => {
-    if (post) {
-      Post.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
+  Person.findOne({ _id: req.body.id }, (err, person) => { 
+    if (person) {
+      Person.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
         updated => {
           res.json(updated);
         }
       );
     } else {
-      Post.create(data).then(created => {
+      Person.create(data).then(created => {
         res.json(created);
       });
     }
   });
 });
-      // Create and Update client
-      app.post("/api/clients", (req, res) => {
-        const data = {
-          lastName: req.body.lastName,
-          firstName: req.body.firstName,
-          middleName: req.body.middleName,
-          //   birth: Date, 
-          gender: req.body.gender
-        };
-        Client.findOne({ _id: req.body.id }, (err, client) => {
-          if (client) {
-            Client.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
-              updated => {
-                res.json(updated);
-              }
-            );
-          } else {
-            Client.create(data).then(created => {
-              res.json(created);
-            });
-          }
-        });
-      });
 
-
-
-// Delete selected post
-app.post("/api/posts/:id", (req, res) => {
-  Post.findByIdAndDelete(req.params.id).then(post => {
-    res.json({ message: "Your post was deleted!" });
+// Delete selected person
+app.post("/api/persons/:id", (req, res) => {
+  Person.findByIdAndDelete(req.params.id).then(person => {
+    res.json({ message: "Person was deleted!" });
   });
 });
-      // Delete selected client
-      app.post("/api/clients/:id", (req, res) => {
-        Client.findByIdAndDelete(req.params.id).then(client => {
-          res.json({ message: "Client was deleted!" });
-        });
+// END OF PERSONS =======================================
+
+// DOCS ================================================
+// Give receipt MB DELETE?
+app.get('/api/docs/receipt/html', function(req,res) {
+  const pathToHTML = path.join(__dirname, '/client/docTemplates/receipt/receipt.html')
+  console.log('pathToHTML:' + pathToHTML)
+  res.sendFile(pathToHTML)
+});
+
+// Create and Update receipt
+app.post("/api/docs/receipt", (req, res) => {
+  const data = {
+    id: req.body.id,
+    ...req.body
+  };
+  AnyDoc.findOne({ _id: req.body.id, docType: 'pko' }, (err, doc) => { 
+    if (doc) {
+      AnyDoc.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
+        updated => {
+          res.json(updated);
+        }
+      );
+    } else {
+      AnyDoc.create(data).then(created => {
+        res.json(created);
       });
+    }
+  });
+});
 
+// Delete selected PKO
+app.post("/api/docs/receipt/:id", (req, res) => {
+  AnyDoc.findByIdAndDelete(req.params.id).then(doc => {
+    res.json({ message: "Receipt was deleted!" });
+  });
+});
 
-app.listen(3333, () => console.log("Server is running on port 3333"));
+// Get docs on Docs page
+app.get("/api/docs", (req, res) => {
+  AnyDoc.find({}).then(docs => {
+    res.json(docs);
+  });
+});
+
+// Search docs
+app.post("/api/docs", (req, res) => {
+  const data = {
+    ...req.body
+    // caseN: req.body,caseN,
+    // type: req.body.type,
+    // dateFrom: '',
+    // dateTo: '',
+  }
+  AnyDoc.find(data)
+		.populate("cases")
+		.then((docs) => {
+			res.json(docs);
+		});
+});
+// END OF DOCS ================================================
+
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

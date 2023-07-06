@@ -1,22 +1,29 @@
-import React, { Component } from "react";
-import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route } from "react-router-dom";
-import Header from "./components/header";
-import Index from "./components/index";
-import Single from "./components/single";
-import New from "./components/new";
-import Edit from "./components/edit";
+import React from 'react';
 
-const App = () => (
-  <Router>
-    <div>
-      <Header />
-      <Route path="/" exact component={Index} />
-      <Route path="/new" exact component={New} />
-      <Route path="/post/:id" exact component={Single} />
-      <Route path="/edit/:id" exact component={Edit} />
-    </div>
-  </Router>
-);
+import { Routes, Route } from 'react-router-dom'
 
-ReactDOM.render(<App />, document.getElementById("app"));
+import { Layout } from './components/Layout';
+import { Main } from './pages/Main';
+import { PageNotFound } from './pages/PageNotFound';
+import { PersonCard } from './pages/PersonCard';
+import { SearchAndResults } from './pages/SearchAndResults';
+import { Docs } from './pages/Docs';
+import { TempReceiptForm } from './docTemplates/TempReceiptForm';
+
+function App() {
+  return(
+    <Routes>
+      <Route path='/' element={<Layout />}>
+        <Route index element={<Main />} />
+        <Route path='create' element={<PersonCard />} />
+        <Route path='persons/*' element={<PersonCard />} />
+        <Route path='search' element={<SearchAndResults />} />
+        <Route path='docs' element={<Docs />} />
+        <Route path='docs/receipt' element={<TempReceiptForm />} />
+        <Route path='*' element={<PageNotFound />} />
+      </Route>
+    </Routes>
+  )  
+}
+
+export { App }

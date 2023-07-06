@@ -172,6 +172,8 @@ sketch
 # .pnp.*
 
 ## some my stuff ##
-todo
+todo.md
+somenotes.js
+.vscode
 
 # End of https://www.toptal.com/developers/gitignore/api/react,node,yarn
