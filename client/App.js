@@ -26,6 +26,4 @@ function App() {
   )  
 }
 
-// DELETE jTHIS COMMENT LATER ust for changes to capitalize first letter
-
 export { App }

@@ -10,6 +10,4 @@ function TempReceiptGen({dangerousData}) {
    )
 }
 
-// DELETE jTHIS COMMENT LATER ust for changes to capitalize first letter
-
 export default TempReceiptGen
