@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import axios from 'axios'
 require('dotenv').config()
 
-const PORT = process.env['PORT']
+const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function CheckBeforeCreate({receivePerson, person}) {
@@ -25,7 +25,7 @@ function CheckBeforeCreate({receivePerson, person}) {
             firstName: { $regex: person.firstName },
             middleName: { $regex: person.middleName },
         }
-        axios.post(`${SERVER_IP}:${PORT}/api/search`, data).then(persons => {
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/search`, data).then(persons => {
             setPersons(persons.data)
         });
     }

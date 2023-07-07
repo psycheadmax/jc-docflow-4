@@ -4,7 +4,7 @@ import axios from 'axios'
 import debounce from 'lodash/debounce'
 require('dotenv').config()
 
-const PORT = process.env['PORT']
+const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function DocsListFilter({person}) {
@@ -35,7 +35,7 @@ function DocsListFilter({person}) {
     }
     
     function searchDocs() {
-		axios.post(`${SERVER_IP}:${PORT}/api/docs`, filter).then((items) => {
+		axios.post(`${SERVER_IP}:${SERVER_PORT}/api/docs`, filter).then((items) => {
 			setDocs(items.data);
 		});
 	}

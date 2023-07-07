@@ -9,7 +9,7 @@ const app = express();
 const path = require("path")
 
 const dbURI = process.env['DB_URI']
-const PORT = process.env['PORT']
+const SERVER_PORT = process.env['SERVER_PORT']
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -153,7 +153,7 @@ async function serverStart() {
       dbURI, { useNewUrlParser: true, useUnifiedTopology: true},
       () => console.log("Connected to MongoDB")
       );
-      app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+      app.listen(SERVER_PORT, () => console.log(`Server is running on port ${SERVER_PORT}`));
   } catch (error) {
     console.log('Server error', error.message)
     process.exit(1)

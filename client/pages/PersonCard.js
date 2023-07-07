@@ -14,7 +14,7 @@ import throttle from 'lodash/throttle'
 import debounce from 'lodash/debounce'
 require('dotenv').config()
 
-const PORT = process.env['PORT']
+const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function PersonCard() {
@@ -35,7 +35,7 @@ function PersonCard() {
         const path = window.location.pathname
         if (regex.test(path)) {
             const id = window.location.pathname.slice(9)
-            axios.get(`${SERVER_IP}:${PORT}/api/persons/${id}`).then(person => {
+            axios.get(`${SERVER_IP}:${SERVER_PORT}/api/persons/${id}`).then(person => {
             dispatch(captureActionCreator(person.data))
         })
         setShowEditButtons(true)
@@ -119,7 +119,7 @@ function PersonCard() {
         e.preventDefault();
         // TODO correction(e)
         const data = {...person}
-        axios.post(`${SERVER_IP}:${PORT}/api/persons/`, data).then(person => {
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
             alert(`Person with id ${person.data._id} Created!`);
             // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
         })
@@ -133,7 +133,7 @@ function PersonCard() {
             id: person._id,
             ...person
         }
-        axios.post(`${SERVER_IP}:${PORT}/api/persons/`, data).then(person => {
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
           alert("Person Successfully Updated!");
         //   this.props.history.push(`/person/${this.props.match.params.id}`);
         });
@@ -142,7 +142,7 @@ function PersonCard() {
     function deletePerson(e) {
         e.preventDefault();
         axios
-          .post(`${SERVER_IP}:${PORT}/api/persons/${this.props.match.params.id}`)
+          .post(`${SERVER_IP}:${SERVER_PORT}/api/persons/${this.props.match.params.id}`)
           .then(data => {
             alert(`Клиент ${person.lastName} ${person.firstName} ${person.middleName} удален`);
             // this.props.history.push(`/persons/create`); // TODO
