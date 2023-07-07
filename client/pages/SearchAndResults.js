@@ -2,6 +2,11 @@ import React, { Component } from "react";
 import { Link, withRouter } from "react-router-dom";
 import axios from "axios";
 import debounce from 'lodash/debounce';
+require('dotenv').config()
+
+const PORT = process.env['PORT']
+const SERVER_IP = process.env['SERVER_IP']
+//${SERVER_IP}:${PORT}
 
 class SearchAndResults extends Component {
   constructor(props) {
@@ -46,7 +51,7 @@ search() {
     firstName: { $regex: this.state.firstName },
     middleName: { $regex: this.state.middleName },
   }
-  axios.post("http://localhost:3333/api/search", data).then(persons => {
+  axios.post(`${SERVER_IP}:${PORT}/api/search`, data).then(persons => {
       this.setState({
         persons: persons.data
       })
