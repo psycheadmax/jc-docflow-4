@@ -5,7 +5,10 @@ import petrovich from 'petrovich'
 import TempReceiptGen from './TempReceiptGen'
 import { CaseNComponent } from '../components/CaseNComponent';
 import axios from 'axios'
+require('dotenv').config()
 
+const PORT = process.env['PORT']
+const SERVER_IP = process.env['SERVER_IP']
 
 const rubles = require('rubles').rubles
 const dayjs = require('dayjs')
@@ -75,7 +78,7 @@ function TempReceiptForm() {
         e.preventDefault()
         console.log('createReceipt clicked')
 
-        axios.post("http://localhost:3333/api/docs/receipt", receiptData).then(receipt => {
+        axios.post(`${SERVER_IP}:${PORT}/api/docs/receipt`, receiptData).then(receipt => {
             alert(`receipt with id ${receipt.data._id} Created!`);
             // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
         })
@@ -88,7 +91,7 @@ function TempReceiptForm() {
             id: person._id,
             ...person
         }
-        axios.post("http://localhost:3333/api/persons/", data).then(person => {
+        axios.post(`${SERVER_IP}:${PORT}/api/persons/`, data).then(person => {
           alert("Person Successfully Updated!");
         //   this.props.history.push(`/person/${this.props.match.params.id}`);
         });

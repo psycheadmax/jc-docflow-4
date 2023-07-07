@@ -2,30 +2,22 @@
 // add require('express').Router() https://dev.to/albertofdzm/mongoose-mongodb-and-express-596
 // add morgan logger
 require('dotenv').config()
-const dbURI = process.env['DB_URI']
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const app = express();
 const path = require("path")
 
-const PORT = 3333
+const dbURI = process.env['DB_URI']
+const PORT = process.env['PORT']
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
 
 // Import Model
 const Person = require("./models/Person");
 const Case = require("./models/Case");
 const AnyDoc = require("./models/AnyDoc")
-
-// Connect to MongoDB
-mongoose.connect(
-  dbURI, { useNewUrlParser: true, useUnifiedTopology: true},
-  () => console.log("MongoDB is connected")
-);
-
 
 // Enable CORS
 app.use((req, res, next) => {
@@ -33,21 +25,21 @@ app.use((req, res, next) => {
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
-
-// PERSONS =======================================
-// Get all of our persons
-app.get("/api/persons", (req, res) => {
-  Person.find({})
-  .populate('cases')
-  .then(persons => {
-    res.json(persons);
+    );
+    next();
   });
-});
+  
+  // PERSONS =======================================
+  // Get all of our persons
+  app.get("/api/persons", (req, res) => {
+    Person.find({})
+    .populate('cases')
+    .then(persons => {
+      res.json(persons);
+    });
+  });
 
-// Search persons
+  // Search persons
 app.post("/api/search", (req, res) => {
   const data = {
     lastName: req.body.lastName,
@@ -82,21 +74,21 @@ app.post("/api/persons", (req, res) => {
         updated => {
           res.json(updated);
         }
-      );
-    } else {
-      Person.create(data).then(created => {
-        res.json(created);
-      });
-    }
+        );
+      } else {
+        Person.create(data).then(created => {
+          res.json(created);
+        });
+      }
+    });
   });
-});
-
-// Delete selected person
-app.post("/api/persons/:id", (req, res) => {
-  Person.findByIdAndDelete(req.params.id).then(person => {
-    res.json({ message: "Person was deleted!" });
+  
+  // Delete selected person
+  app.post("/api/persons/:id", (req, res) => {
+    Person.findByIdAndDelete(req.params.id).then(person => {
+      res.json({ message: "Person was deleted!" });
+    });
   });
-});
 // END OF PERSONS =======================================
 
 // DOCS ================================================
@@ -119,21 +111,21 @@ app.post("/api/docs/receipt", (req, res) => {
         updated => {
           res.json(updated);
         }
-      );
-    } else {
-      AnyDoc.create(data).then(created => {
-        res.json(created);
-      });
-    }
+        );
+      } else {
+        AnyDoc.create(data).then(created => {
+          res.json(created);
+        });
+      }
+    });
   });
-});
-
-// Delete selected PKO
-app.post("/api/docs/receipt/:id", (req, res) => {
-  AnyDoc.findByIdAndDelete(req.params.id).then(doc => {
-    res.json({ message: "Receipt was deleted!" });
+  
+  // Delete selected PKO
+  app.post("/api/docs/receipt/:id", (req, res) => {
+    AnyDoc.findByIdAndDelete(req.params.id).then(doc => {
+      res.json({ message: "Receipt was deleted!" });
+    });
   });
-});
 
 // Get docs on Docs page
 app.get("/api/docs", (req, res) => {
@@ -146,17 +138,26 @@ app.get("/api/docs", (req, res) => {
 app.post("/api/docs", (req, res) => {
   const data = {
     ...req.body
-    // caseN: req.body,caseN,
-    // type: req.body.type,
-    // dateFrom: '',
-    // dateTo: '',
   }
   AnyDoc.find(data)
-		.populate("cases")
-		.then((docs) => {
-			res.json(docs);
-		});
+  .populate("cases")
+  .then((docs) => {
+    res.json(docs);
+  });
 });
 // END OF DOCS ================================================
 
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+async function serverStart() {
+  try {
+    mongoose.connect(
+      dbURI, { useNewUrlParser: true, useUnifiedTopology: true},
+      () => console.log("Connected to MongoDB")
+      );
+      app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+  } catch (error) {
+    console.log('Server error', error.message)
+    process.exit(1)
+  }
+}
+
+serverStart()

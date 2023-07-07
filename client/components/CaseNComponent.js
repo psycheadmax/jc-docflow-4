@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Link } from "react-router-dom";
 import axios from 'axios'
 import dayjs from 'dayjs';
+require('dotenv').config()
+
+const PORT = process.env['PORT']
+const SERVER_IP = process.env['SERVER_IP']
 
 function CaseNComponent({idPerson, cases}) {
 
@@ -29,7 +33,7 @@ function CaseNComponent({idPerson, cases}) {
             firstName: { $regex: person.firstName },
             middleName: { $regex: person.middleName },
         }
-        axios.post("http://localhost:3333/api/search", data).then(persons => {
+        axios.post(`${SERVER_IP}:${PORT}/api/search`, data).then(persons => {
             setPersons(persons.data)
         });
     }
