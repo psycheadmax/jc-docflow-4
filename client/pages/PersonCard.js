@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { 
     captureActionCreator, 
     removeActionCreator, 
@@ -9,28 +10,50 @@ import {
     } from '../store/personReducer';
 import axios from 'axios'
 import { CheckBeforeCreate } from '../components/CheckBeforeCreate';
+import { getDataByIdFromURL } from '../functions';
 import dayjs from 'dayjs';
 import throttle from 'lodash/throttle'
 import debounce from 'lodash/debounce'
 require('dotenv').config()
 
+
 const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function PersonCard() {
-    const [showEditButtons, setShowEditButtons] = useState(false)
     const [persons, setPersons] = useState([])
     
+    const navigate = useNavigate()
     const dispatch = useDispatch()
     const person = useSelector(state => state.personReducer.person)
+    let personShortName = `${person.lastName} ${Array.from(person.firstName)[0]}. ${Array.from(person.middleName)[0]}.`
+    /* const [personName, setPersonName] = useState({
+        lastName: person.lastName,
+        firstName: person.firstName,
+        middleName: person.middleName,
+    }) */
+    
+    const personNames = {
+        lastName: person.lastName,
+        firstName: person.firstName,
+        middleName: person.middleName,
+    }
 
     console.log('person in state:', person)
 
-    useEffect(() => {
+    /* useEffect(() => {
         getPersonIdFromURL()
+      }, []); */
+      useEffect(() => {
+        async function getData() {
+            const data = await getDataByIdFromURL('persons')
+            console.log('useEffect data: ',data)
+            dispatch(captureActionCreator(data))
+        }
+        getData()
       }, []);
 
-    function getPersonIdFromURL() { // !!! TODO implement on direct link !!!
+    /* function getPersonIdFromURL() { // !!! TODO implement on direct link !!!
         const regex = new RegExp('^\/persons\/[A-Za-z0-9]+')
         const path = window.location.pathname
         if (regex.test(path)) {
@@ -38,9 +61,8 @@ function PersonCard() {
             axios.get(`${SERVER_IP}:${SERVER_PORT}/api/persons/${id}`).then(person => {
             dispatch(captureActionCreator(person.data))
         })
-        setShowEditButtons(true)
         }
-    }
+    } */
 
     function onChange(e, index) {
         const idArray = e.target.id.split('-')
@@ -58,7 +80,6 @@ function PersonCard() {
                 ...person[idFirst][index],
                 [idSecond]: e.target.value
             }, idFirst, index]
-
             dispatch(addressPhoneUpdateActionCreator(addressOrPhone))
         }
 
@@ -111,6 +132,9 @@ function PersonCard() {
 
     function revert(e) {
         e.preventDefault()
+        getDataByIdFromURL('persons')
+        // getPersonIdFromURL()
+        // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
         // TODO dispatch(captureActionCreator({...personClone}))
     }
 
@@ -119,61 +143,65 @@ function PersonCard() {
         e.preventDefault();
         // TODO correction(e)
         const data = {...person}
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
-            alert(`Person with id ${person.data._id} Created!`);
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(item => {
+            alert(`Клиент ${personShortName} создан в БД`);
+            navigate(`/persons/${item.data._id}`)
+            getPersonIdFromURL()
             // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
         })
-        setShowEditButtons(true)
     }
 
     function savePerson(e) {
         e.preventDefault();
         correction(e)
         const data = {
-            id: person._id,
             ...person
         }
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
-          alert("Person Successfully Updated!");
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, data).then(person => {
+          alert(`Данные ${personShortName} обновлены в БД`);
         //   this.props.history.push(`/person/${this.props.match.params.id}`);
         });
     }
 
     function deletePerson(e) {
         e.preventDefault();
-        axios
-          .post(`${SERVER_IP}:${SERVER_PORT}/api/persons/${this.props.match.params.id}`)
-          .then(data => {
-            alert(`Клиент ${person.lastName} ${person.firstName} ${person.middleName} удален`);
-            // this.props.history.push(`/persons/create`); // TODO
-            dispatch(removeActionCreator())
-            setShowEditButtons(true)
-          });
-     }
-
-    function correction(e) {
-        e.preventDefault()
-        const obj = structuredClone(person)
-        for (const id in obj) {
-            if (typeof obj[id] === 'string') {
-                // firstLetterCapitalize
-                if (id === 'lastName' || id === 'firstName' || id === 'middleName') {
-                    obj[id] = obj[id].charAt(0).toUpperCase() + obj[id].slice(1)
-                }
-                // trim
-                obj[id] = obj[id].trim()
+        const reallyDelete = confirm(`Действительно удалить ${personShortName} из БД?`)
+        if (reallyDelete) {
+            axios
+              .post(`${SERVER_IP}:${SERVER_PORT}/api/persons/delete/id${person._id}`)
+              .then(data => {
+                alert(`${personShortName} удален из БД`);
+                // this.props.history.push(`/persons/create`); // TODO
+                dispatch(removeActionCreator())
+              });
+              navigate(`/create`)
             }
         }
-        dispatch(captureActionCreator(obj))
-    }
-
-    function receivePerson(person) {
-        dispatch(captureActionCreator(person))
-    }
-
-    function clearPerson(e) {
-        e.preventDefault()
-        dispatch(removeActionCreator())
+        
+        function correction(e) {
+            e.preventDefault()
+            const obj = structuredClone(person)
+            for (const id in obj) {
+                if (typeof obj[id] === 'string') {
+                    // firstLetterCapitalize
+                    if (id === 'lastName' || id === 'firstName' || id === 'middleName') {
+                        obj[id] = obj[id].charAt(0).toUpperCase() + obj[id].slice(1)
+                    }
+                    // trim
+                    obj[id] = obj[id].trim()
+                }
+            }
+            dispatch(captureActionCreator(obj))
+        }
+        
+        function receivePerson(person) {
+            dispatch(captureActionCreator(person))
+        }
+        
+        function clearPerson(e) {
+            e.preventDefault()
+            dispatch(removeActionCreator())
+            navigate(`/create`)
     }
 
     return (
@@ -303,7 +331,7 @@ function PersonCard() {
                     <legend className="bg-light">АДРЕСА</legend>
                 {person.address.map((el, index) => {
                     return(
-                        <div className="row">
+                        <div className="row" key={index}>
                             <h3>Адрес {el.description}</h3>
                         {/* Город */}
                         <div className="col-md-2 mb-3">
@@ -383,15 +411,20 @@ function PersonCard() {
                     </div>
                 </div>
                 {/* КНОПКИ */}
+                {/*  */}
                 <button className="btn btn-success btn-lg btn-block" onClick={clearPerson} >Очистить</button>
                 &nbsp;
-                {!showEditButtons && (<button className="btn btn-success btn-lg btn-block" type="submit" onClick={createPerson} >Создать</button>)}
+                {/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
+                {!person._id && (<button className="btn btn-success btn-lg btn-block" type="submit" onClick={createPerson} >Создать нового</button>)}
                 &nbsp;
-                {showEditButtons && (<button className="btn btn-primary btn-lg btn-block" onClick={savePerson} >Сохранить</button>)}
+                {/*  */}
+                {person._id && (<button className="btn btn-primary btn-lg btn-block" onClick={savePerson} >Сохранить изменения</button>)}
                 &nbsp;
-                {showEditButtons && (<button className="btn btn-warning btn-lg btn-block" onClick={revert} >Вернуть</button>)}
+                {/*  */}
+                {person._id && (<button className="btn btn-warning btn-lg btn-block" onClick={revert} >Вернуть исходные</button>)}
                 &nbsp;
-                {showEditButtons && (<button className="btn btn-danger btn-lg btn-block" onClick={deletePerson} >Удалить</button>)}
+                {/*  */}
+                {person._id && (<button className="btn btn-danger btn-lg btn-block" onClick={deletePerson} >Удалить из БД</button>)}
                 &nbsp;
 
                 {/* { (persons.length) ? `Found ${persons.length} entries` : null}
@@ -408,7 +441,7 @@ function PersonCard() {
                 ))}
                 </ul> */}
             </form>
-            <CheckBeforeCreate receivePerson={receivePerson} person={person}/>
+            <CheckBeforeCreate receivePerson={receivePerson} person={personNames}/>
         </div>
     )
 }

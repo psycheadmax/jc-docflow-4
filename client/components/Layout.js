@@ -7,11 +7,11 @@ function Layout() {
         <>
             <Header />
             <div className="content-container">
-            <Outlet />
+                <Outlet />
             </div>
             <footer>MaxKorn &copy;2023</footer>
         </>
     )
 }
 
-export {Layout}
+export { Layout }

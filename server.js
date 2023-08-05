@@ -31,7 +31,8 @@ app.use((req, res, next) => {
   
   // PERSONS =======================================
   // Get all of our persons
-  app.get("/api/persons", (req, res) => {
+  //  NOT IN USE
+  app.get("/api/persons/all", (req, res) => {
     Person.find({})
     .populate('cases')
     .then(persons => {
@@ -40,11 +41,10 @@ app.use((req, res, next) => {
   });
 
   // Search persons
-app.post("/api/search", (req, res) => {
+  // <CheckBeforeCreate /> <SearchAndResults />
+app.post("/api/persons/search", (req, res) => {
   const data = {
-    lastName: req.body.lastName,
-    firstName: req.body.firstName,
-    middleName: req.body.middleName,
+    ...req.body
   }
   Person.find(data)
   .populate('cases')
@@ -55,7 +55,8 @@ app.post("/api/search", (req, res) => {
 
 // Get One of Our persons
 app.get("/api/persons/:id", (req, res) => {
-  Person.findOne({ _id: req.params.id })
+  const id = req.params.id.replace('id', '')
+  Person.findOne({ _id: id })
   .populate('cases')
   .then(person => {
     res.json(person);
@@ -63,14 +64,14 @@ app.get("/api/persons/:id", (req, res) => {
 });
 
 // Create and Update person
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons/write", (req, res) => {
   const data = {
-    id: req.body.id,
+    // id: req.body.id,
     ...req.body
-  };
-  Person.findOne({ _id: req.body.id }, (err, person) => { 
+  }
+  Person.findOne({ _id: req.body._id }, (err, person) => { 
     if (person) {
-      Person.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
+      Person.findByIdAndUpdate(req.body._id, data, { upsert: false }).then(
         updated => {
           res.json(updated);
         }
@@ -84,8 +85,9 @@ app.post("/api/persons", (req, res) => {
   });
   
   // Delete selected person
-  app.post("/api/persons/:id", (req, res) => {
-    Person.findByIdAndDelete(req.params.id).then(person => {
+  app.post("/api/persons/delete/:id", (req, res) => {
+    const id = req.params.id.replace('id', '')
+    Person.findByIdAndDelete(id).then(person => {
       res.json({ message: "Person was deleted!" });
     });
   });
@@ -99,15 +101,15 @@ app.get('/api/docs/receipt/html', function(req,res) {
   res.sendFile(pathToHTML)
 });
 
-// Create and Update receipt
-app.post("/api/docs/receipt", (req, res) => {
+// Create and Update doc
+app.post("/api/docs/write", (req, res) => {
   const data = {
-    id: req.body.id,
-    ...req.body
+    ...req.body,
+    // id: req.body.id
   };
-  AnyDoc.findOne({ _id: req.body.id, docType: 'pko' }, (err, doc) => { 
+  AnyDoc.findOne({ _id: req.body._id}, (err, doc) => { 
     if (doc) {
-      AnyDoc.findByIdAndUpdate(req.body.id, data, { upsert: false }).then(
+      AnyDoc.findByIdAndUpdate(req.body._id, data, { upsert: false }).then( 
         updated => {
           res.json(updated);
         }
@@ -119,23 +121,35 @@ app.post("/api/docs/receipt", (req, res) => {
       }
     });
   });
+
+  // Get One of Docs
+app.get("/api/docs/:id", (req, res) => {
+  // console.log(`Get One of Docs. Doc: ${req.params.id}`)
+  const id = req.params.id.replace('id', '')
+  AnyDoc.findOne({ _id: id })
+  .populate('cases')
+  .then(doc => {
+    res.json(doc);
+  });
+});
   
-  // Delete selected PKO
-  app.post("/api/docs/receipt/:id", (req, res) => {
-    AnyDoc.findByIdAndDelete(req.params.id).then(doc => {
-      res.json({ message: "Receipt was deleted!" });
+  // Delete selected DOC
+  app.post("/api/docs/delete/:id", (req, res) => {
+    const id = req.params.id.replace('id', '')
+    AnyDoc.findByIdAndDelete(id).then(doc => {
+      res.json({ message: "Document was deleted!" });
     });
   });
 
 // Get docs on Docs page
-app.get("/api/docs", (req, res) => {
+app.get("/api/docs/all", (req, res) => {
   AnyDoc.find({}).then(docs => {
     res.json(docs);
   });
 });
 
 // Search docs
-app.post("/api/docs", (req, res) => {
+app.post("/api/docs/search", (req, res) => {
   const data = {
     ...req.body
   }
@@ -150,7 +164,7 @@ app.post("/api/docs", (req, res) => {
 async function serverStart() {
   try {
     mongoose.connect(
-      dbURI, { useNewUrlParser: true, useUnifiedTopology: true},
+      dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false}, //TODO MB remove useFindAndModify: false 
       () => console.log("Connected to MongoDB")
       );
       app.listen(SERVER_PORT, () => console.log(`Server is running on port ${SERVER_PORT}`));

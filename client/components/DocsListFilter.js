@@ -35,7 +35,7 @@ function DocsListFilter({person}) {
     }
     
     function searchDocs() {
-		axios.post(`${SERVER_IP}:${SERVER_PORT}/api/docs`, filter).then((items) => {
+		axios.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/search`, filter).then((items) => {
 			setDocs(items.data);
 		});
 	}
@@ -57,6 +57,7 @@ function DocsListFilter({person}) {
 						id="disabledTextInput"
 						placeholder="Иванов"
 						value={`${person.lastName} ${person.firstName} ${person.middleName}`}
+						readOnly
 					/>
 				</div>
 				{/* Дело */}
@@ -68,9 +69,11 @@ function DocsListFilter({person}) {
 						id="caseN" onChange={(e) => onChange(e)}
 					>
 						<option defaultValue value='noValue'>Не выбрано</option>
-						{person.cases.map((item, index) => (
-							<option key={index} value={item._id}>{item.caseN}</option>
-						))}
+						{person.cases &&
+							person.cases.map((item, index) => (
+								<option key={index} value={item._id}>{item.caseN}</option>
+							))
+						}
 					</select>
 				</div>
 
@@ -94,7 +97,7 @@ function DocsListFilter({person}) {
 			<ul className="list-group">
 				{docs.map((item, index) => (
 					<li className="list-group-item" key={index} id={item._id}>
-						<Link to={{ pathname: `/docs/${item._id}` }}>
+						<Link to={{ pathname: `/docs/id${item._id}` }}>
 							{`${item.type}  - ${item.description} - ${item.date}`}
 						</Link>
 					</li>

@@ -11,8 +11,8 @@ const AnyDoc = new Schema({
     sum: Number,
     sumLetters: String,
     // all beyond is AnyDocument-specific
-    docProps: {
-          pko: {
+    docProps: { type: Schema.Types.Mixed 
+          /* pko: {
             lastNameGenitive: String,
             firstNameGenitive: String,
             middleNameGenitive: String,
@@ -24,11 +24,11 @@ const AnyDoc = new Schema({
           },
           agreement: {
             text: String
-          }
+          } */
     },
 } ,
 {timestamps: true}); 
-
+        
 module.exports = mongoose.model("AnyDoc", AnyDoc)
 
 /* 

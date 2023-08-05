@@ -19,6 +19,7 @@ function App() {
         <Route path='persons/*' element={<PersonCard />} />
         <Route path='search' element={<SearchAndResults />} />
         <Route path='docs' element={<Docs />} />
+        <Route path='docs/*' element={<TempReceiptForm />} />
         <Route path='docs/receipt' element={<TempReceiptForm />} />
         <Route path='*' element={<PageNotFound />} />
       </Route>

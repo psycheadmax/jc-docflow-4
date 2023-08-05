@@ -15,6 +15,11 @@ function CheckBeforeCreate({receivePerson, person}) {
 
     useEffect(() => {
         search()
+        /* it must fix some problem */
+        return() => {
+            setPersons([])
+        }
+        /* it must fix some problem */
       }, [person]);
 
     const len = persons.length
@@ -25,7 +30,7 @@ function CheckBeforeCreate({receivePerson, person}) {
             firstName: { $regex: person.firstName },
             middleName: { $regex: person.middleName },
         }
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/search`, data).then(persons => {
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/search`, data).then(persons => {
             setPersons(persons.data)
         });
     }
@@ -39,7 +44,7 @@ function CheckBeforeCreate({receivePerson, person}) {
                             ?  
                             <li className="list-group-item" key={index} id={person._id}> 
                                 <Link onClick={() => givePerson(person)} to={{
-                                    pathname: `/persons/${person._id}`,
+                                    pathname: `/persons/id${person._id}`,
                                     // propsPerson: person
                                     }}>
                                     {person.lastName} {person.firstName} {person.middleName}
@@ -54,3 +59,22 @@ function CheckBeforeCreate({receivePerson, person}) {
 }
 
 export { CheckBeforeCreate }
+
+// TODO
+// piece of code that fix following problem
+// Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application. To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
+/* const [state, setState] = useState({});
+
+useEffect(() => {
+    myFunction();
+    return () => {
+      setState({}); // This worked for me
+    };
+}, []);
+
+const myFunction = () => {
+    setState({
+        name: 'Jhon',
+        surname: 'Doe',
+    })
+}*/
