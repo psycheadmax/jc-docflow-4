@@ -79,14 +79,13 @@ function SearchAndResults() {
                 </div>
             </div>
           </div>
-        ViewAllPersons
         <hr className="mb-4" />
-        { (persons.length) ? `Found ${persons.length} entries` : null}
+        { (persons.length) ? `Найдено ${persons.length} клиентов` : null}
         <ul className="list-group">
           {persons.map((person, index) => (
               <li className="list-group-item" key={index}>
                 <Link to={{
-                  pathname: `/persons/${person._id}`,
+                  pathname: `/persons/id${person._id}`,
                   // propsPerson: person
                   }}>
                     {person.innNumber && `ИНН: ${person.innNumber}, `}{person.lastName} {person.firstName} {person.middleName && `${person.middleName}`}
@@ -97,18 +96,5 @@ function SearchAndResults() {
       </div>
   )
 }
-
-  // componentDidMount() {
-  //   console.log('Component Did Mount')
-  //   axios.get("http://localhost:3333/api/persons/all").then(persons => {
-  //     this.setState({
-  //       persons: persons.data,
-  //       lastName: '',
-  //       firstName: '',
-  //       middleName: ''
-  //     })
-  //   });
-  // }
-
 
 export { SearchAndResults }

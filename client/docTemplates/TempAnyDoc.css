@@ -1,0 +1,52 @@
+/* sections
+HEADER
+TITLE
+MAIN
+ASK
+ATTACHMENTS
+FOOTER */
+
+.section-header {
+   margin-left: 60%;
+   font-size: 14pt;
+   font-weight: 800;
+}
+
+.section-title {
+   text-align: center;
+   font-size: 14pt;
+   font-weight: 800;
+   margin-top: 1cm;
+}
+
+.section-main {
+   text-align: justify;
+   text-indent: 1.25cm;
+   margin-top: 1cm;
+}
+
+.section-ask-title {
+   margin-top: 1cm;
+}
+
+.section-ask {
+   margin-top: 1cm;
+   text-indent: 1.25cm;
+}
+
+.section-att-title {
+   margin-top: 1cm;
+}
+
+.section-att {
+   margin-top: 1cm;
+   text-indent: 1.25cm;
+}
+
+.section-footer {
+   margin-top: 1cm;
+   display: flex;
+   flex-direction: row;
+   justify-content: space-between;
+}
+

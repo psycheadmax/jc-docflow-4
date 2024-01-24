@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector, useStore } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { 
     captureActionCreator, 
     removeActionCreator, 
     addressPhoneUpdateActionCreator, 
     birthPassportUpdateActionCreator, 
-    personReducer
     } from '../store/personReducer';
+    import { removeCaseActionCreator } from '../store/caseReducer';
 import axios from 'axios'
 import { CheckBeforeCreate } from '../components/CheckBeforeCreate';
 import { getDataByIdFromURL } from '../functions';
 import dayjs from 'dayjs';
-import throttle from 'lodash/throttle'
-import debounce from 'lodash/debounce'
 require('dotenv').config()
 
 
@@ -41,41 +39,31 @@ function PersonCard() {
 
     console.log('person in state:', person)
 
-    /* useEffect(() => {
-        getPersonIdFromURL()
-      }, []); */
+    function personCaseTrigger(data) {
+        if (data._id !== person._id) {
+            dispatch(captureActionCreator(data))
+            dispatch(removeCaseActionCreator())
+        } else {
+            dispatch(captureActionCreator(data))
+        }
+    }
+
       useEffect(() => {
         async function getData() {
-            const data = await getDataByIdFromURL('persons')
+            const data = await getDataByIdFromURL('persons') // TODO calling now even if there no id (create instead)
             console.log('useEffect data: ',data)
-            dispatch(captureActionCreator(data))
+            personCaseTrigger(data)
         }
         getData()
       }, []);
-
-    /* function getPersonIdFromURL() { // !!! TODO implement on direct link !!!
-        const regex = new RegExp('^\/persons\/[A-Za-z0-9]+')
-        const path = window.location.pathname
-        if (regex.test(path)) {
-            const id = window.location.pathname.slice(9)
-            axios.get(`${SERVER_IP}:${SERVER_PORT}/api/persons/${id}`).then(person => {
-            dispatch(captureActionCreator(person.data))
-        })
-        }
-    } */
 
     function onChange(e, index) {
         const idArray = e.target.id.split('-')
         const idFirst = idArray[0]
         const idSecond = idArray[1]
         if (idArray.length === 1) {
-            dispatch(captureActionCreator({[e.target.id]: e.target.value}))    
-        } else if (idFirst === 'passport' || idFirst === 'birth') {
-            const birthPassport = [
-                idFirst, idSecond, e.target.value
-            ]
-            dispatch(birthPassportUpdateActionCreator(birthPassport))
-        } else {
+            personCaseTrigger({[e.target.id]: e.target.value})
+        }  else {
             const addressOrPhone = [{
                 ...person[idFirst][index],
                 [idSecond]: e.target.value
@@ -85,15 +73,11 @@ function PersonCard() {
 
         if (e.target.id === 'middleName') {
             if (e.target.value.slice(-1) === 'а') {
-                dispatch(captureActionCreator({gender: 'female'}))    
+                personCaseTrigger({gender: 'female'})
             } else {
-                dispatch(captureActionCreator({gender: 'male'}))
+                personCaseTrigger({gender: 'male'})
             }
         }
-        //  TODO check wether need or not debounce and throttle
-        // const debounceFn = debounce(search, 2000)
-        // debounceFn()
-        // this.search()
     }
 
     function addAddress(e) {
@@ -101,33 +85,35 @@ function PersonCard() {
         const addressArray = [...person.address]
         addressArray.push({
             description: '',
+            subject: '',
             city: '',
+            settlement: '',
             street: '',
             building: '',
             appartment: '',
           })
-        dispatch(captureActionCreator({address: addressArray}))
+        personCaseTrigger({address: addressArray})
     }
 
     function removeAddress(e, index) {
         e.preventDefault()
         let addressArray = [...person.address]
         addressArray.splice(index, 1)
-        dispatch(captureActionCreator({address: addressArray}))
+        personCaseTrigger({address: addressArray})
     }
 
     function addPhone(e) {
         e.preventDefault()
         const phoneArray = [...person.phone]
         phoneArray.push({description: '', number: ''})
-        dispatch(captureActionCreator({phone: phoneArray}))
+        personCaseTrigger({phone: phoneArray})
     }
 
     function removePhone(e, index) {
         e.preventDefault()
         let phoneArray = [...person.phone]
         phoneArray.splice(index, 1)
-        dispatch(captureActionCreator({phone: phoneArray}))
+        personCaseTrigger({phone: phoneArray})
     }
 
     function revert(e) {
@@ -135,7 +121,7 @@ function PersonCard() {
         getDataByIdFromURL('persons')
         // getPersonIdFromURL()
         // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-        // TODO dispatch(captureActionCreator({...personClone}))
+        // TODO personCaseTrigger({...personClone}))
     }
 
     function createPerson(e) {
@@ -143,10 +129,15 @@ function PersonCard() {
         e.preventDefault();
         // TODO correction(e)
         const data = {...person}
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(item => {
+        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, data).then(item => {
             alert(`Клиент ${personShortName} создан в БД`);
-            navigate(`/persons/${item.data._id}`)
-            getPersonIdFromURL()
+            navigate(`/persons/id${item.data._id}`)
+            // TODO click on the /create doesn't empty form
+            // TODO buttons after creation doesn't changes
+            const dataFromURL = getDataByIdFromURL('persons') 
+            data._id = item.data._id
+            console.log(dataFromURL._id)
+            personCaseTrigger(data)
             // this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
         })
     }
@@ -191,11 +182,11 @@ function PersonCard() {
                     obj[id] = obj[id].trim()
                 }
             }
-            dispatch(captureActionCreator(obj))
+            personCaseTrigger(obj)
         }
         
         function receivePerson(person) {
-            dispatch(captureActionCreator(person))
+            personCaseTrigger(person)
         }
         
         function clearPerson(e) {
@@ -251,7 +242,7 @@ function PersonCard() {
                     {/* Серия паспорта*/}
                     <div className="col-md-1 mb-3">
                         <label htmlFor="passport-serie">Серия</label>
-                        <input type="number" className="form-control" id="passport-serie" placeholder="8700" value={person.passport.serie} onChange={onChange} />
+                        <input type="number" className="form-control" id="passportSerie" placeholder="8700" value={person.passporSerie} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid passport serie is required.
                         </div>
@@ -259,7 +250,7 @@ function PersonCard() {
                     {/* Номер паспорта */}
                     <div className="col-md-2 mb-3">
                         <label htmlFor="passport-number">Номер</label>
-                        <input type="number" className="form-control" id="passport-number" placeholder="123456" value={person.passport.number} onChange={onChange} />
+                        <input type="number" className="form-control" id="passportNumber" placeholder="123456" value={person.passportNumber} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid passport number is required.
                         </div>
@@ -267,7 +258,7 @@ function PersonCard() {
                     {/* Дата Рождения */}
                     <div className="col-md-2 mb-3">
                         <label htmlFor="birth-date">Дата рождения</label>
-                        <input type="date" className="form-control" id="birth-date" placeholder="" value={dayjs(person.birth.date).format('YYYY-MM-DD')} onChange={onChange} />
+                        <input type="date" className="form-control" id="birthDate" placeholder="1960-02-29" value={dayjs(person.birthDate).format('YYYY-MM-DD')} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid date is required.
                         </div>
@@ -275,7 +266,7 @@ function PersonCard() {
                     {/* Место рождения */}
                     <div className="col-md-6 mb-3">
                         <label htmlFor="birth-place">Место рождения</label>
-                        <input type="text" className="form-control" id="birth-place" placeholder="Иванович" value={person.birth.place} onChange={onChange} />
+                        <input type="text" className="form-control" id="birthPlace" placeholder="пп Москва - Воркута, вагон 5, место 23" value={person.birthPlace} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid middle name is required.
                         </div>
@@ -283,7 +274,7 @@ function PersonCard() {
                     {/* Дата выдачи паспорта */}
                     <div className="col-md-2 mb-3">
                         <label htmlFor="passport-date">Дата выдачи</label>
-                        <input type="date" className="form-control" id="passport-date" placeholder="Иванович" value={dayjs(person.passport.date).format('YYYY-MM-DD')} onChange={onChange} />
+                        <input type="date" className="form-control" id="passportDate" placeholder="2009-06-16" value={dayjs(person.passportDate).format('YYYY-MM-DD')} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid date is required.
                         </div>
@@ -291,15 +282,15 @@ function PersonCard() {
                     {/* Место выдачи паспорта */}
                     <div className="col-md-4 mb-3">
                         <label htmlFor="passport-place">Место выдачи</label>
-                        <input type="text" className="form-control" id="passport-place" placeholder="Иванович" value={person.passport.place} onChange={onChange} />
+                        <input type="text" className="form-control" id="passportPlace" placeholder="ОВД РСФСР при МВД СССР по Коми АСССР в г. Воркуте " value={person.passportPlace} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid issue place is required.
                         </div>
                     </div>
                     {/* Код подразделения */}
                     <div className="col-md-2 mb-3">
-                        <label htmlFor="passport-code">Passport code</label>
-                        <input type="text" className="form-control" id="passport-code" placeholder="110-003" value={person.passport.code} onChange={onChange} />
+                        <label htmlFor="passport-code">Код подразделения</label>
+                        <input type="text" className="form-control" id="passportCode" placeholder="110-003" value={person.passportCode} onChange={onChange} />
                         <div className="invalid-feedback">
                         Valid number is required.
                         </div>
@@ -332,19 +323,43 @@ function PersonCard() {
                 {person.address.map((el, index) => {
                     return(
                         <div className="row" key={index}>
-                            <h3>Адрес {el.description}</h3>
+                            <h3>Адрес {el.description}</h3>  {/* //TODO add description field */}
+                        {/* Индекс */}
+                        <div className="col-md-1 mb-3">
+                            <label htmlFor="address-city">Индекс</label>
+                            <input type="number" className="form-control" id="address-index" placeholder="169900" value={el.index} onChange={(e) => onChange(e, index)} />
+                            <div className="invalid-feedback">
+                            Valid index is required.
+                            </div>
+                        </div>
+                        {/* Субъект */}
+                        <div className="col-md-2 mb-3">
+                            <label htmlFor="address-city">Субъект (край, область, округ...)</label>
+                            <input type="text" className="form-control" id="address-subject" placeholder="Республика Коми" value={el.subject} onChange={(e) => onChange(e, index)} />
+                            <div className="invalid-feedback">
+                            Valid subject is required.
+                            </div>
+                        </div>
                         {/* Город */}
                         <div className="col-md-2 mb-3">
                             <label htmlFor="address-city">Город</label>
-                            <input type="text" className="form-control" id="address-city" placeholder="Воркута" value={el.city} onChange={(e) => onChange(e, index)} />
+                            <input type="text" className="form-control" id="address-city" placeholder="г. Воркута" value={el.city} onChange={(e) => onChange(e, index)} />
                             <div className="invalid-feedback">
                             Valid city is required.
                             </div>
                         </div>
+                        {/* Населенный пункт */}
+                        <div className="col-md-2 mb-3">
+                            <label htmlFor="address-city">Населенный пункт</label>
+                            <input type="text" className="form-control" id="address-settlement" placeholder="пос. Цементнозаводский" value={el.settlement} onChange={(e) => onChange(e, index)} />
+                            <div className="invalid-feedback">
+                            Valid lcation is required.
+                            </div>
+                        </div>
                         {/* Улица */}
-                        <div className="col-md-3 mb-3">
+                        <div className="col-md-2 mb-3">
                             <label htmlFor="address-street">Улица</label>
-                            <input type="text" className="form-control" id="address-street" placeholder="пл. им. Красной площади" value={el.street} onChange={(e) => onChange(e, index)} />
+                            <input type="text" className="form-control" id="address-street" placeholder="ул. Ватутина" value={el.street} onChange={(e) => onChange(e, index)} />
                             <div className="invalid-feedback">
                             Valid street is required.
                             </div>
@@ -371,7 +386,7 @@ function PersonCard() {
                     </div>
                     )
                 })}
-                    <button className="btn btn-light btn-lg btn-block" onClick={addAddress} >добавить адрес</button>
+                    <button className="btn btn-light btn-md btn-block" onClick={addAddress} >добавить адрес</button>
                 </fieldset>
                 <fieldset>
                     <legend className="bg-light">ТЕЛЕФОНЫ</legend>
@@ -398,11 +413,23 @@ function PersonCard() {
                                 )
                             })
                         }
-                <button className="btn btn-light btn-lg btn-block" onClick={addPhone} >добавить телефон</button>
+                <button className="btn btn-light btn-md btn-block" onClick={addPhone} >добавить телефон</button>
                 </fieldset>
-                {/* Комментарий */}
+
+               <fieldset>
+                <legend className='bg-light'>ОСТАЛЬНОЕ</legend>
+                {/* Электронная почта */}
                 <div className="row">
-                    <div className="col-md-12 mb-3">
+                <div className="col-md-2 mb-3">
+                    <label htmlFor="email">Электропочта<span className="text-muted"> (необязательно)</span></label>
+                    <input type="email" className="form-control" id="email" placeholder="you@example.com" value={person.email} onChange={onChange} />
+                    <div className="invalid-feedback">
+                        Please enter a valid email address for shipping updates.
+                    </div>
+                </div>
+
+                {/* Комментарий */}
+                    <div className="col-md-10 mb-3">
                         <label htmlFor="comment">Комментарий</label>
                         <input type="text" className="form-control" id="comment" placeholder="какой-то текст...." value={person.comment} onChange={onChange} />
                         <div className="invalid-feedback">
@@ -410,21 +437,23 @@ function PersonCard() {
                         </div>
                     </div>
                 </div>
+                </fieldset> 
+                
                 {/* КНОПКИ */}
                 {/*  */}
-                <button className="btn btn-success btn-lg btn-block" onClick={clearPerson} >Очистить</button>
+                <button className="btn btn-success btn-md btn-block" onClick={clearPerson} >Очистить</button>
                 &nbsp;
                 {/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
-                {!person._id && (<button className="btn btn-success btn-lg btn-block" type="submit" onClick={createPerson} >Создать нового</button>)}
+                {!person._id && (<button className="btn btn-success btn-md btn-block" type="submit" onClick={createPerson} >Создать нового</button>)}
                 &nbsp;
                 {/*  */}
-                {person._id && (<button className="btn btn-primary btn-lg btn-block" onClick={savePerson} >Сохранить изменения</button>)}
+                {person._id && (<button className="btn btn-primary btn-md btn-block" onClick={savePerson} >Сохранить изменения</button>)}
                 &nbsp;
                 {/*  */}
-                {person._id && (<button className="btn btn-warning btn-lg btn-block" onClick={revert} >Вернуть исходные</button>)}
+                {person._id && (<button className="btn btn-warning btn-md btn-block" onClick={revert} >Вернуть исходные</button>)}
                 &nbsp;
                 {/*  */}
-                {person._id && (<button className="btn btn-danger btn-lg btn-block" onClick={deletePerson} >Удалить из БД</button>)}
+                {person._id && (<button className="btn btn-danger btn-md btn-block" onClick={deletePerson} >Удалить из БД</button>)}
                 &nbsp;
 
                 {/* { (persons.length) ? `Found ${persons.length} entries` : null}

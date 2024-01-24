@@ -1,0 +1,46 @@
+td {
+    vertical-align: bottom;
+}
+table.fixed { 
+    font-family: 'Times New Roman', Times, serif;
+    border-collapse: collapse;
+    font-size: 8pt;
+    table-layout:fixed; 
+}
+ .sign {
+    font-size: 6pt;
+    text-align: center;
+    vertical-align: top;
+ }
+ .ko1 {
+    font-size: 7pt;
+ }
+ .undercell {
+    border-bottom: 1px solid black;
+ }
+ .dotline {
+    border-bottom: 1px dotted black;
+ }
+ .wholecell {
+    border: 1px solid black;
+ }
+ .bold {
+    font-weight: bold;
+ }
+ .italic {
+    font-style: italic;
+ }
+ .centertext {
+    text-align: center;
+ }
+ .reason {
+    text-align: center;
+    vertical-align: top;
+    text-decoration: underline;
+ }
+ .righttext {
+    text-align: right;
+ }
+ .cutline {
+    border-right: 1px dotted black;
+ }

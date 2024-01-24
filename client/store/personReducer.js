@@ -6,33 +6,32 @@ const initialState = {
         gender: '',
         innNumber: '',
         snilsNumber: '',
-        birth: {
-          date: '',
-          place: ''
-        },
-        passport: {
-          serie: '',
-          number: '',
-          date: '',
-          place: '',
-          code: '',
-        },
+        birthDate: '',
+        birthPlace: '',
+        passportSerie: '',
+        passportNumber: '',
+        passportDate: '',
+        passportPlace: '',
+        passportCode: '',
         address: [{
-          description: '', // регистрации, фактический, спорный
+          description: '', // регистрации, проживания, почтовый etc
+          subject: '',
           city: '',
+          settlement: '',
           street: '',
           building: '',
           appartment: '',
         }],
         phone: [{
-          description: '', // основной, сотовый, дополнительный, рабочий...
+          description: '', // основной, дополнительный, рабочий etc
           number: ''
         }], 
+        email: '',
         comment: '',
       //   cases: [{
       //     idCase: { type: Schema.ObjectId, ref: 'cases' },
       // }]
-      } 
+    }
 }
 
 const CAPTURE = 'CAPTURE'
@@ -40,15 +39,16 @@ const ADDRESSPHONEUPDATE = 'ADDRESSPHONEUPDATE'
 const BIRTHPASSPORTUPDATE = 'BIRTHPASSPORTUPDATE'
 const REMOVE = 'REMOVE'
 
+
 export const personReducer = (state = initialState, action) => {
   const stateClone = structuredClone(state)
-    switch (action.type) {
-        case CAPTURE:
-            const obj = Object.assign(
-                {...state.person},
-                {...action.payload}
-              )
-            return {person: obj}
+  switch (action.type) {
+    case CAPTURE:
+          const obj = Object.assign(
+              {...state.person},
+              {...action.payload}
+            )
+          return {person: obj}
         case ADDRESSPHONEUPDATE: 
               const dataAP = action.payload[0]
               const idFirstAP = action.payload[1]

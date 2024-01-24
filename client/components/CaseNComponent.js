@@ -163,7 +163,7 @@ function CaseNComponent({idPerson, cases}) {
 			{/* new case */}
 
 			<button
-				className="btn btn-light btn-lg btn-block"
+				className="btn btn-light btn-md btn-block"
 				onClick={(e) => newCaseN(e)}
 			>
 				новое дело
