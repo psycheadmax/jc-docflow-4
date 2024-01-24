@@ -1,9 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 
 function Main() {
     return (
-        <h1>Это Главная страница. Пока непонятно что здесь будет.</h1>
+        <>
+            <h1>Это Главная страница. Пока непонятно что здесь будет.</h1>
+            {/* <Redirect to="/search"/> TODO doesn't work */}
+        </>
     )
 }
 

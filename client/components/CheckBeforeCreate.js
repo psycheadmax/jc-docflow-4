@@ -40,7 +40,7 @@ function CheckBeforeCreate({receivePerson, person}) {
             <h3>Найдено похожих записей в БД: {len}</h3>
                 <ul className="list-group">
                 { persons.map((person, index) => (
-                            (index < 10) 
+                            (index < 30) 
                             ?  
                             <li className="list-group-item" key={index} id={person._id}> 
                                 <Link onClick={() => givePerson(person)} to={{
@@ -60,7 +60,7 @@ function CheckBeforeCreate({receivePerson, person}) {
 
 export { CheckBeforeCreate }
 
-// TODO
+// TODO memory leak
 // piece of code that fix following problem
 // Warning: Can't perform a React state update on an unmounted component. This is a no-op, but it indicates a memory leak in your application. To fix, cancel all subscriptions and asynchronous tasks in a useEffect cleanup function.
 /* const [state, setState] = useState({});

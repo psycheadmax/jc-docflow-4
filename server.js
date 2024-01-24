@@ -2,32 +2,140 @@
 // add require('express').Router() https://dev.to/albertofdzm/mongoose-mongodb-and-express-596
 // add morgan logger
 require('dotenv').config()
-const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const express = require("express");
 const app = express();
+const router = express.Router()
 const path = require("path")
+const cors = require("cors")
+
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator')
+const authMiddleware = require('./middleware/authMiddleware')
+const sessionStorage = require('sessionstorage-for-nodejs')
 
 const dbURI = process.env['DB_URI']
 const SERVER_PORT = process.env['SERVER_PORT']
+const SECRET_KEY = process.env['SECRET_KEY']
+
+// As of this edit, Mongoose is now at v5.4.13. Per their docs, these are the fixes for the deprecation warnings...
+mongoose.set('useNewUrlParser', true);
+mongoose.set('useFindAndModify', false);
+mongoose.set('useCreateIndex', true);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // Import Model
-const Person = require("./models/Person");
-const Case = require("./models/Case");
+const Person = require("./models/Person")
+const Case = require("./models/Case")
 const AnyDoc = require("./models/AnyDoc")
+const User = require('./models/User')
+const Role = require('./models/Role')
+const DocTemplate = require('./models/DocTemplate')
+
+const generateAccessToken = (id, username, roles) => {
+  const payload = {
+      id,
+      username,
+      roles
+  }
+  return jwt.sign(payload, SECRET_KEY, {expiresIn: "1h"} )
+}
 
 // Enable CORS
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-    );
-    next();
-  });
+app.use(cors({
+  origin: ['http://localhost:1234']
+  })
+)
+
+// old CORS enabling
+// app.use((req, res, next) => {
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader(
+//     "Access-Control-Allow-Headers",
+//     "Origin, X-Requested-With, Content-Type, Accept"
+//     );
+//     next();
+//   });
+
+//  auth check 
+// app.use('/api', authMiddleware, (req, res, next) => {
+//   next()
+// })
+
+// NEXT Here insert use authRouter and authController !!!
+app.post('/login', async (req, res) => {
+  try {
+    const {username, password} = req.body
+    const user = await User.findOne({username})
+    if (!user) {
+      return res.status(400).json({message: `Пользователь ${username} не найден`})
+    }
+    const validPassword = bcrypt.compareSync(password, user.password)
+    if (!validPassword) {
+      return res.status(400).json({message: `Введен неверный пароль`})
+    }
+    const token = generateAccessToken(user._id, username, user.roles)
+    sessionStorage.setItem('token', token)
+    return res.json({token})
+  } catch(e) {
+    console.log(e)
+    res.status(400).json({message: 'Login error'})
+  }
+})
+
+app.post('/registration', async (req, res) => { 
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+        return res.status(400).json({message: "Ошибка при регистрации", errors})
+    }
+    const {username, password} = req.body;
+    console.log(req.body)
+    const candidate =  await User.findOne({username})
+    if (candidate) {
+        return res.status(400).json({message: "Пользователь с таким именем уже существует"})
+    }
+    const hashPassword = bcrypt.hashSync(password, 7);
+    const userRole =  await Role.findOne({value: "USER"})
+    const user = new User({username, password: hashPassword, roles: [userRole.value]})
+    await user.save()
+    return res.json({message: "Пользователь успешно зарегистрирован"})
+  } catch(e) {
+    console.log(e)
+    res.status(400).json({message: 'Registration error'})
+  }
+})
+
+app.post('/logout', (req, res) => {
+    sessionStorage.removeItem('token')
+    return res.json({message: 'Пользователь вышел'})
+})
+
+app.get('/users', (req, res) => {
+  console.log('get users')
+      const users = User.find()
+      res.json(users)
+  }
+)
+
+// just to create roles in DB once
+app.get('/createRoles', async (req, res) => {
+  try {
+    const userRole = new Role()
+    const adminRole = new Role({value: "ADMIN"})
+    await adminRole.save()
+    await userRole.save()
+    res.json('roles created')
+  } catch (error) {
+    console.log(error)
+    res.status(400).json({message: error})
+  }
+  }
+)
   
   // PERSONS =======================================
   // Get all of our persons
@@ -93,10 +201,61 @@ app.post("/api/persons/write", (req, res) => {
   });
 // END OF PERSONS =======================================
 
+// CASES =======================================
+app.post("/api/cases/write", (req, res) => {
+  const data = {
+    // id: req.body.id,
+    ...req.body
+  }
+  console.log('data', data);
+  
+  Case.findOne({ _id: req.body._id }, (err, caseItem) => { 
+    if (caseItem) {
+      Case.findByIdAndUpdate(req.body._id, data, { upsert: false }).then(
+        updated => {
+          res.json(updated);
+        }
+        );
+      } else {
+        Case.create(data).then(created => {
+          res.json(created);
+        });
+      }
+    });
+  });
+
+app.post("/api/cases", (req, res) => {
+  const data = {
+    ...req.body
+  }
+  Case.find(data)
+  .then(cases => {
+    res.json(cases);
+  });
+});
+
+app.get("/api/cases/:id", (req, res) => {
+  const id = req.params.id.replace('id', '')
+  Case.findOne({ _id: id })
+  .populate('idPerson')
+  .then(caseData => {
+    res.json(caseData);
+  });
+});
+
+  // Delete selected case
+  app.post("/api/cases/delete/:id", (req, res) => {
+    const id = req.params.id.replace('id', '')
+    Case.findByIdAndDelete(id).then(item => {
+      res.json({ message: "Case was deleted!" });
+    });
+  });
+// END OF CASES =======================================
+
 // DOCS ================================================
 // Give receipt MB DELETE?
 app.get('/api/docs/receipt/html', function(req,res) {
-  const pathToHTML = path.join(__dirname, '/client/docTemplates/receipt/receipt.html')
+  const pathToHTML = path.join(__dirname, '/client/doctemplates/receipt/receipt.html')
   console.log('pathToHTML:' + pathToHTML)
   res.sendFile(pathToHTML)
 });
@@ -160,6 +319,56 @@ app.post("/api/docs/search", (req, res) => {
   });
 });
 // END OF DOCS ================================================
+
+// DOCTEMPLATES ==============================================
+// get all doctemplates
+app.get("/api/doctemplates/all", (req, res) => {
+  DocTemplate.find().then(doctemplates => {
+    res.json(doctemplates);
+  });
+});
+
+app.get("/api/doctemplates/:id", (req, res) => {
+  const id = req.params.id.replace('id', '')
+  DocTemplate.findOne({ _id: id })
+  .then(doctemplate => {
+    res.json(doctemplate);
+  });
+});
+
+// write new doctemplate or save current
+app.post("/api/doctemplates/write", (req, res) => {
+  const data = {
+    // id: req.body.id,
+    ...req.body
+  }
+  console.log('doctemplates/write req.body:');
+  console.log(req.body);
+  
+  DocTemplate.findOne({ _id: req.body._id }, (err, doctemplate) => { 
+    if (doctemplate) {
+      DocTemplate.findByIdAndUpdate(req.body._id, data, { upsert: false }).then(
+        updated => {
+          res.json(updated);
+        }
+        );
+      } else {
+        DocTemplate.create(data).then(created => {
+          res.json(created);
+        });
+      }
+    });
+  });
+
+// delete doctemplate
+app.post("/api/doctemplate/delete/:id", (req, res) => {
+  const id = req.params.id.replace('id', '')
+  DocTemplate.findByIdAndDelete(id).then(doctemplate => {
+    res.json({ message: "Template was deleted!" });
+  });
+});
+
+// END OF DOCTEMPLATES ========================================
 
 async function serverStart() {
   try {

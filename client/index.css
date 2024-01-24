@@ -1,3 +1,16 @@
+@media print {
+  @page { size: 210mm 297mm; }
+  html, body { 
+    /* margin: 1cm;   */
+    /* height: 100vh;  */
+    margin-top: 2mm !important;
+    margin-left: 3mm !important;
+    margin-right: 3mm !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -12,14 +25,112 @@ code {
     monospace;
 }
 
-.content-container, footer {
+.Content footer {
+  max-width: 1320px;
   width: 90%;
   margin: auto;
 }
 
 footer {
+  margin: auto;
+  max-width: 1320px;
   text-align: right;
   font-weight: bold;
+  margin-top: 30px;
 }
 
+/* Login form */
+html,
+body {
+  height: 100%;
+}
 
+/* body {
+  display: flex;
+  align-items: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  background-color: #f5f5f5;
+} */
+
+.form-signin {
+  max-width: 330px;
+  padding: 15px;
+}
+
+.form-signin .form-floating:focus-within {
+  z-index: 2;
+}
+
+.form-signin input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.row {
+  align-items: center;
+}
+
+/* react-draft-wysiwyg styles (TempAnyDoc) */
+.wrapper-class {
+  padding: 1rem;
+  border: 1px solid #ccc;
+}
+.editor-class {
+  background-color: lightgray;
+  padding: 1rem;
+  border: 1px solid #ccc;
+}
+.toolbar-class {
+  border: 1px solid #ccc;
+}
+.code-view {
+  padding: 1rem;
+
+  margin: 10px;
+}
+.text-area {
+  width: 100%;
+  background: black;
+  border: 1px solid #ccc;
+  color: white;
+  min-height: 200px;
+}
+
+.fromReduxState {
+  width: 100%;
+  padding: auto;
+  text-align:center;
+  margin-bottom: 15px;
+  border: darkgray solid 1px;
+  border-radius: 5px;
+  background-color: rgb(224, 224, 224)
+}
+
+.doctemplates {
+  width:100%;
+}
+
+.doctemplates li {
+  padding-left: 10px;
+}
+
+.attention {
+  color:crimson
+}
+
+/* Editor styles */
+.jcBlockquote {
+  color: #ffffff;
+  font-family: Georgia, serif;
+  font-style: italic;
+  text-align: center;
+}
+/* END of Editor styles */

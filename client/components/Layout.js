@@ -6,7 +6,7 @@ function Layout() {
     return(
         <>
             <Header />
-            <div className="content-container">
+            <div className="Content container">
                 <Outlet />
             </div>
             <footer>MaxKorn &copy;2023</footer>
