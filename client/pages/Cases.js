@@ -16,8 +16,9 @@ function Cases() {
 	const [cases, setCases] = useState([
 		{
 			idPerson: "",
-			caseN: "",
+			caseTitle: "",
 			caseDate: "",
+			caseCategory: "",
 			caseReceivedDocs: [], // [Title of the doc, Have] TODO find where to enter received docs
 			caseFlow: [], // [Phase, Date, Comment] TODO
 			caseReminder: [], // TODO [Title, Date, Active, Comment]
@@ -81,7 +82,8 @@ function Cases() {
                 },
             ],
         }
-		axios
+		navigate(`/cases/new`);
+		/* axios
 			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/write`, data)
 			.then((item) => {
 				console.log("item: ");
@@ -93,7 +95,7 @@ function Cases() {
 				// console.log(dataFromURL._id);
 				// dispatch(captureActionCreator(data));
 				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-			});
+			}); */
 	}
 
 	return (
@@ -117,7 +119,7 @@ function Cases() {
 									pathname: `/cases/id${item._id}`,
 								}}
 							>
-								{item.caseN} от {item.caseDate}
+								{item.caseTitle} от {dayjs(item.caseDate).format('DD.MM.YYYY')}
 							</Link>
 						</li>
 					) : null

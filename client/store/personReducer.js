@@ -14,7 +14,7 @@ const initialState = {
         passportPlace: '',
         passportCode: '',
         address: [{
-          description: '', // регистрации, проживания, почтовый etc
+          type: '', // регистрации, проживания, почтовый etc
           subject: '',
           city: '',
           settlement: '',
@@ -65,17 +65,13 @@ export const personReducer = (state = initialState, action) => {
                   }
                 })
               }
-
               stateClone.person[idFirstAP] = returnArray(stateClone.person[idFirstAP])
-
               return stateClone
         case BIRTHPASSPORTUPDATE:
           const idFirstBP = action.payload[0]
           const idSecondBP = action.payload[1]
           const valueBP = action.payload[2]
-
           stateClone.person[idFirstBP][idSecondBP] = valueBP
-
           return stateClone
         case REMOVE:
             return initialState

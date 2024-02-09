@@ -3,18 +3,22 @@ import ReactDOM from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import petrovich from "petrovich";
 import TempReceiptGen from "./TempReceiptGen";
-import { CaseNComponent } from "../components/CaseNComponent";
 import {
 	getDataByIdFromURL,
 	getCurrentYearPKONumbers,
 	getUnusedPKONumbers,
 } from "../functions";
-import isEqual from 'lodash/isEqual'
+import isEqual from "lodash/isEqual";
 import axios from "axios";
 require("dotenv").config();
 import { TempReceiptDoc } from "./TempReceiptDoc";
 import "./TempReceiptForm.css";
 import { useReactToPrint } from "react-to-print";
+import {
+	addDocActionCreator,
+	removeDocActionCreator,
+} from "../store/docReducer";
+import { useNavigate } from "react-router-dom";
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
@@ -25,6 +29,8 @@ const dayjs = require("dayjs");
 function TempReceiptForm() {
 	const dispatch = useDispatch();
 	const person = useSelector((state) => state.personReducer.person);
+	const caseName = useSelector((state) => state.caseReducer);
+	const navigate = useNavigate();
 
 	const personForPetrovich = {
 		first: person.firstName,
@@ -38,7 +44,7 @@ function TempReceiptForm() {
 
 	const [receiptData, setReceiptData] = useState({
 		idPerson: person._id,
-		caseN: person.cases || [], // || []
+		idCase: caseName._id,
 		type: "ПКО", // ПКО, Договор
 		description: "no description",
 		date: dayjs().format("YYYY-MM-DD"),
@@ -57,37 +63,36 @@ function TempReceiptForm() {
 			cashier: "Д.А. Пахмутов",
 		},
 	});
+	const [initialReceiptData, setInitialReceiptData] = useState(receiptData);
 
 	useEffect(() => {
-        async function fetchData() {
-          const data = await getDataByIdFromURL("docs");
-          console.log("useEffect Data: ", data);
-          if (data) {
-            setReceiptData(data);
-          }
-        }
-      
-        async function initializeReceipt() {
-          const numbers = await getCurrentYearPKONumbers();
-          const unusedNumbers = getUnusedPKONumbers(numbers);
-          setPKONumbers(unusedNumbers);
-      
-          // Update the receiptData with the first PKONumber
-          setReceiptData(prevReceiptData => ({
-            ...prevReceiptData,
-            number: unusedNumbers[0] // Assuming unusedNumbers is not empty
-          }));
-        }
-        
-        fetchData();
-        initializeReceipt();
-      
-      }, []);
-      
-	console.log("person in receipt", person);
-	console.log("initial receiptData: ", receiptData);
+		async function fetchData() {
+			const data = await getDataByIdFromURL("docs");
+			console.log("useEffect Data: ", data);
+			if (data) {
+				setReceiptData(data);
+			}
+		}
 
-	const [initialReceiptData, setInitialReceiptData] = useState(structuredClone(receiptData))
+		async function initializeReceipt() {
+			const numbers = await getCurrentYearPKONumbers();
+			const unusedNumbers = getUnusedPKONumbers(numbers);
+			setPKONumbers(unusedNumbers);
+
+			// Update the receiptData with the first PKONumber
+			setReceiptData((prevReceiptData) => ({
+				...prevReceiptData,
+				number: unusedNumbers[0], // Assuming unusedNumbers is not empty
+			}));
+			setInitialReceiptData((prevReceiptData) => ({
+				...prevReceiptData,
+				number: unusedNumbers[0],
+			}));
+		}
+
+		fetchData();
+		initializeReceipt();
+	}, []);
 
 	const componentRef = useRef();
 
@@ -101,25 +106,25 @@ function TempReceiptForm() {
 	});
 
 	function onReceiptDataChange(e) {
-        const idArray = e.target.id.split("-");
-        const id = idArray[0];
-        const idSecond = idArray[1];
-      
-		console.log('isEqual', isEqual(receiptData, initialReceiptData));
-		console.log('receiptData', receiptData);
-		console.log('initialReceiptData', initialReceiptData);
+		const idArray = e.target.id.split("-");
+		const id = idArray[0];
+		const idSecond = idArray[1];
 
-        if (idArray.length === 1) {
-          setReceiptData({
-            ...receiptData,
-            [e.target.id]: isNaN(e.target.value) ? e.target.value : parseInt(e.target.value, 10)
-          });
-        } else {
-          const receiptDataClone = structuredClone(receiptData);
-          receiptDataClone[id][idSecond] = e.target.value;
-          setReceiptData(receiptDataClone);
-        }
-      }
+		console.log("isEqual", isEqual(receiptData, initialReceiptData));
+
+		if (idArray.length === 1) {
+			setReceiptData({
+				...receiptData,
+				[e.target.id]: isNaN(e.target.value)
+					? e.target.value
+					: parseInt(e.target.value, 10),
+			});
+		} else {
+			const receiptDataClone = structuredClone(receiptData);
+			receiptDataClone[id][idSecond] = e.target.value;
+			setReceiptData(receiptDataClone);
+		}
+	}
 
 	function deleteRub(str) {
 		const one = str.replace(" рубль 00 копеек", "");
@@ -129,19 +134,24 @@ function TempReceiptForm() {
 	}
 
 	function onSumChange(e) {
-        setReceiptData({
-            ...receiptData,
-            [e.target.id]: isNaN(e.target.value) ? e.target.value : parseInt(e.target.value, 10),
-            sumLetters: deleteRub(rubles(e.target.value)),
-          })
+		setReceiptData({
+			...receiptData,
+			[e.target.id]: isNaN(e.target.value)
+				? e.target.value
+				: parseInt(e.target.value, 10),
+			sumLetters: deleteRub(rubles(e.target.value)),
+		});
 	}
 
 	function createReceipt(e) {
 		e.preventDefault();
+		console.log("receiptData: ", receiptData);
 		axios
 			.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/write`, receiptData)
 			.then((receipt) => {
 				alert(`ПКО ${receipt.data._id} создан`);
+				navigate(`/docs/id${receipt.data._id}`);
+				dispatch(addDocActionCreator(receipt.data));
 				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
 			});
 	}
@@ -159,24 +169,31 @@ function TempReceiptForm() {
 		// TODO doesn't  create new case to existing
 	}
 
-	function revertReceipt() {}
+	function revertReceipt(e) {
+		e.preventDefault();
+		if (confirm("Отменить все изменения?")) {
+			setReceiptData(initialReceiptData);
+		}
+	}
 
-	function deleteReceipt() {}
-
-	function generatePDF() {}
-
-	/* function savePerson(e) {
-        e.preventDefault();
-        correction(e)
-        const data = {
-            id: person._id,
-            ...person
-        }
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
-          alert("Person Successfully Updated!");
-        //   this.props.history.push(`/person/${this.props.match.params.id}`);
-        });
-    } */
+	function deleteReceipt(e) {
+		e.preventDefault();
+		const reallyDelete = confirm(
+			`Действительно удалить ПКО №${receiptData.number} из БД?`
+		);
+		if (reallyDelete) {
+			axios
+				.post(
+					`${SERVER_IP}:${SERVER_PORT}/api/docs/delete/id${person._id}`
+				)
+				.then((data) => {
+					alert(`Документ удален из БД`);
+					// this.props.history.push(`/persons/create`); // TODO
+					dispatch(removeDocActionCreator());
+				});
+			navigate(`/docs`);
+		}
+	}
 
 	return (
 		<div className="component">
@@ -194,7 +211,7 @@ function TempReceiptForm() {
 								id="lastName"
 								placeholder="Иванов"
 								value={person.lastName}
-								readOnly
+								disabled
 							/>
 							<div className="invalid-feedback">
 								Valid last NameGenitive is required.
@@ -209,7 +226,7 @@ function TempReceiptForm() {
 								id="firstName"
 								placeholder="Иван"
 								value={person.firstName}
-								readOnly
+								disabled
 							/>
 							<div className="invalid-feedback">
 								Valid first NameGenitive is required.
@@ -224,6 +241,7 @@ function TempReceiptForm() {
 								id="middleName"
 								placeholder="Иванович"
 								value={person.middleName}
+								disabled
 							/>
 							<div className="invalid-feedback">
 								Valid middle NameGenitive is required.
@@ -297,8 +315,8 @@ function TempReceiptForm() {
 								className="form-select"
 								value={receiptData.number}
 								onChange={onReceiptDataChange}
-                                id="number"
-                                type="number"
+								id="number"
+								type="number"
 								required
 							>
 								{PKONumbers.map((number) => (
@@ -445,48 +463,47 @@ function TempReceiptForm() {
 					</div>
 				</fieldset>
 				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					type="submit"
-					onClick={createReceipt}
+				<div className="footer-buttons">
+					<button
+						className="btn btn-danger btn-md btn-block"
+						type="submit"
+						onClick={createReceipt}
+						disabled={person._id}
 					>
-					Создать новый
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={saveReceipt}
-					disabled={isEqual(receiptData, initialReceiptData)}
+						Создать
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-danger btn-md btn-block"
+						onClick={saveReceipt}
+						disabled={isEqual(receiptData, initialReceiptData)}
 					>
-					Сохранить изменения в БД
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={revertReceipt}
-					disabled={isEqual(receiptData, initialReceiptData)}
-				>
-					Вернуть исходный
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={deleteReceipt}
-				>
-					Удалить
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-primary btn-md btn-block"
-					onClick={handlePrintWrapper}
-				>
-					Печать
-				</button>
-				&nbsp;
+						Сохранить изменения в БД
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-danger btn-md btn-block"
+						onClick={revertReceipt}
+						disabled={isEqual(receiptData, initialReceiptData)}
+					>
+						Вернуть исходный
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-danger btn-md btn-block"
+						onClick={deleteReceipt}
+						disabled={!receiptData._id}
+					>
+						Удалить
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-primary btn-md btn-block"
+						onClick={handlePrintWrapper}
+					>
+						Печать
+					</button>
+				</div>
 				{/*  */}
 				{/* <button className="btn btn-danger btn-md btn-block" onClick={generatePDF} >Удалить</button>
                 &nbsp; */}

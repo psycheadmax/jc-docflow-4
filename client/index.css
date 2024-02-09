@@ -96,6 +96,7 @@ body {
 
   margin: 10px;
 }
+
 .text-area {
   width: 100%;
   background: black;
@@ -105,6 +106,8 @@ body {
 }
 
 .fromReduxState {
+  display: block;
+  min-height: 30px;
   width: 100%;
   padding: auto;
   text-align:center;
@@ -124,6 +127,10 @@ body {
 
 .attention {
   color:crimson
+}
+
+div.footer-buttons button {
+  margin-right: 10px;
 }
 
 /* Editor styles */

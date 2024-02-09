@@ -1,48 +1,109 @@
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
-import debounce from 'lodash/debounce'
-require('dotenv').config()
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import debounce from "lodash/debounce";
+import { useDispatch } from "react-redux";
+import { addDocActionCreator } from "../store/docReducer";
+import { captureActionCreator } from "../store/personReducer";
+import {
+	addCaseActionCreator,
+	removeCaseActionCreator,
+} from "../store/caseReducer";
+import {
+	addTemplateActionCreator,
+	removeTemplateActionCreator,
+} from "../store/templateReducer";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+require("dotenv").config();
 
-const SERVER_PORT = process.env['SERVER_PORT']
-const SERVER_IP = process.env['SERVER_IP']
+const SERVER_PORT = process.env["SERVER_PORT"];
+const SERVER_IP = process.env["SERVER_IP"];
 
-function DocsListFilter({person}) {
-    
-    console.log('person props in DocsListFilter: ',person)
+function DocsListFilter({ person }) {
+	console.log("person props in DocsListFilter: ", person);
 
-    const [filter, setFilter] = useState({
-        idPerson: person._id,
-    }) 
-    
-    const [docs, setDocs] = useState([])
-    
-    useEffect(() => {
-        searchDocs()
-    }, [filter]); // [filter] - condition to re-render
-    
-    function onChange(e) {
-        if (e.target.value === 'noValue') {
-            const filterCopy = structuredClone(filter)
-            delete filterCopy[e.target.id];
-            setFilter(filterCopy)
-        } else {
-            setFilter({
-                ...filter,
-                [e.target.id]: e.target.value,
-            })
-        }
-    }
-    
-    function searchDocs() {
-		axios.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/search`, filter).then((items) => {
-			setDocs(items.data);
-		});
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const [filter, setFilter] = useState({
+		idPerson: person._id,
+	});
+
+	const [docs, setDocs] = useState([]);
+
+	useEffect(() => {
+		searchDocs();
+	}, [filter]); // [filter] - condition to re-render
+
+	function onChange(e) {
+		if (e.target.value === "noValue") {
+			const filterCopy = structuredClone(filter);
+			delete filterCopy[e.target.id];
+			setFilter(filterCopy);
+		} else {
+			setFilter({
+				...filter,
+				[e.target.id]: e.target.value,
+			});
+		}
 	}
 
-    const len = docs.length
+	async function loadState(e, id) {
+		e.preventDefault();
+		console.log("clicked:", id);
+		// try {
+		// LAST STOP  what if something undefined
+		// case can be undefined
+		// template is undefined while its PKO
+		const doc = await axios.get(
+			`${SERVER_IP}:${SERVER_PORT}/api/docs/id${id}`
+		);
+		console.log(doc.data);
+		dispatch(addDocActionCreator(doc.data));
+		if (doc.data.idPerson) {
+			const person = await axios.get(
+				`${SERVER_IP}:${SERVER_PORT}/api/persons/id${doc.data.idPerson}`
+			);
+			console.log("person.data: ", person.data);
+			dispatch(captureActionCreator(person.data));
+		}
+		if (doc.data.idCase) {
+			const result = await axios.get(
+				`${SERVER_IP}:${SERVER_PORT}/api/cases/id${doc.data.idCase}`
+			);
+			console.log("caseTitleame.data: ", result.data);
+			dispatch(removeCaseActionCreator());
+			dispatch(addCaseActionCreator(result.data));
+		}
+		if (doc.data.idTemplate) {
+			const result = await axios.get(
+				`${SERVER_IP}:${SERVER_PORT}/api/doctemplates/id${doc.data.idTemplate}`
+			);
+			console.log("template.data: ", result.data);
+			dispatch(removeTemplateActionCreator());
+			dispatch(addTemplateActionCreator(result.data));
+		}
+		navigate(`/docs/id${doc.data._id}`);
+		// } catch (error) {
+		// 	console.log(error)
+		// }
+	}
 
-    return (
+	async function searchDocs() {
+		try {
+			const response = await axios.post(
+				`${SERVER_IP}:${SERVER_PORT}/api/docs/search`,
+				filter
+			);
+			setDocs(response.data);
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	const len = docs.length;
+
+	return (
 		<div className="component">
 			Фильтр
 			<div className="row">
@@ -62,18 +123,22 @@ function DocsListFilter({person}) {
 				</div>
 				{/* Дело */}
 				<div className="col-md-4 mb-3">
-                    <label htmlFor="caseN">Дело</label>
+					<label htmlFor="caseTitle">Дело</label>
 					<select
 						className="form-select form-select-md mb-3"
 						aria-label=".form-select-sm example"
-						id="caseN" onChange={(e) => onChange(e)}
+						id="caseTitle"
+						onChange={(e) => onChange(e)}
 					>
-						<option defaultValue value='noValue'>Не выбрано</option>
+						<option defaultValue value="noValue">
+							Не выбрано
+						</option>
 						{person.cases &&
 							person.cases.map((item, index) => (
-								<option key={index} value={item._id}>{item.caseN}</option>
-							))
-						}
+								<option key={index} value={item._id}>
+									{item.caseTitle}
+								</option>
+							))}
 					</select>
 				</div>
 
@@ -86,7 +151,9 @@ function DocsListFilter({person}) {
 						value={filter.type}
 						onChange={onChange}
 					>
-						<option defaultValue value='noValue'>Не выбрано</option>
+						<option defaultValue value="noValue">
+							Не выбрано
+						</option>
 						<option value="ПКО">ПКО</option>
 						<option value="Договор">Договор</option>
 					</select>
@@ -97,8 +164,17 @@ function DocsListFilter({person}) {
 			<ul className="list-group">
 				{docs.map((item, index) => (
 					<li className="list-group-item" key={index} id={item._id}>
-						<Link to={{ pathname: `/docs/id${item._id}` }}>
-							{`${item.type}  - ${item.description} - ${item.date}`}
+						{/* <Link to={{ pathname: `/docs/id${item._id}` }} onClick={() => loadState(item._id)}> */}
+						<Link onClick={(e) => loadState(e, item._id)}>
+							{
+							`${item.name}  • 
+							${item.type}  • 
+							${item.description} • 
+							${dayjs(item.date).format("DD.MM.YYYY")} • 
+							клиент:${item.idPerson} • 
+							дело:${item.idCase} • 
+							${item.sum}руб.`
+							}
 						</Link>
 					</li>
 				))}
@@ -107,5 +183,4 @@ function DocsListFilter({person}) {
 	);
 }
 
-export { DocsListFilter }
-
+export { DocsListFilter };

@@ -7,7 +7,6 @@ const SERVER_IP = process.env["SERVER_IP"];
 
 function getDataByIdFromURL(dataType) {
 	// !!! TODO implement on direct link !!!
-	console.log("getDataByIdFromURL called");
 	const regex = new RegExp("^/" + dataType + "/id[A-Za-z0-9]+");
 	const path = window.location.pathname;
 	const pathArray = path.split("/");

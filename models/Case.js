@@ -3,8 +3,10 @@ const Schema = mongoose.Schema;
 
 const Case = new Schema({
     idPerson : { type: Schema.Types.ObjectId, ref: 'Person' },
-    caseN: String,
+    caseTitle: String,
+    // caseN: String,
     caseDate: Date,
+    caseCategory: String,
     caseReceivedDocs: [
         {
             title: String,

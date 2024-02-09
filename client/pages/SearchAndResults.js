@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link, withRouter } from "react-router-dom";
 import axios from "axios";
 import debounce from 'lodash/debounce';
+import { useDispatch } from 'react-redux';
+import { removeActionCreator } from '../store/personReducer';
 require('dotenv').config()
 
 const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function SearchAndResults() {
+
+  const dispatch = useDispatch()
 
   const [query, setQuery] = useState({
     innNumber: '',
@@ -86,8 +90,7 @@ function SearchAndResults() {
               <li className="list-group-item" key={index}>
                 <Link to={{
                   pathname: `/persons/id${person._id}`,
-                  // propsPerson: person
-                  }}>
+                  }} onClick={dispatch(removeActionCreator())}>
                     {person.innNumber && `ИНН: ${person.innNumber}, `}{person.lastName} {person.firstName} {person.middleName && `${person.middleName}`}
                 </Link>
               </li>

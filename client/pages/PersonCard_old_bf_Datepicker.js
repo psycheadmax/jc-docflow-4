@@ -12,7 +12,6 @@ import axios from "axios";
 import { CheckBeforeCreate } from "../components/CheckBeforeCreate";
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
-import ReactInputDateMask from 'react-input-date-mask';
 require("dotenv").config();
 
 const SERVER_PORT = process.env["SERVER_PORT"];
@@ -22,48 +21,43 @@ function PersonCard() {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const [person, setPerson] = useState({
-		lastName: "",
-		firstName: "",
-		middleName: "",
-		gender: "",
-		innNumber: "",
-		snilsNumber: "",
-		// birthDate: dayjs('2000-01-01').format('DD.MM.YYYY'),
-		birthDate: "",
-		birthPlace: "",
-		passportSerie: "",
-		passportNumber: "",
-		passportDate: "",
-		passportPlace: "",
-		passportCode: "",
-		address: [
-			{
-				description: "", // регистрации, проживания, почтовый etc
-				index: "",
-				subject: "",
-				city: "",
-				settlement: "",
-				street: "",
-				building: "",
-				appartment: "",
-			},
-		],
-		phone: [
-			{
-				description: "", // основной, дополнительный, рабочий etc
-				number: "",
-			},
-		],
-		email: "",
-		comment: "",
-		//   cases: [{
-		//     idCase: { type: Schema.ObjectId, ref: 'cases' },
-		// }]
-	});
-	const personRedux = useSelector((state) => state.personReducer.person);
-	const [unmodified, setUnmodified] = useState(true);
-
-	let personShortName = `${person.lastName} ${person.firstName[0]}. ${person.firstName[0]}.`;
+			lastName: '',
+			firstName: '',
+			middleName: '',
+			gender: '',
+			innNumber: '',
+			snilsNumber: '',
+			birthDate: '',
+			birthPlace: '',
+			passportSerie: '',
+			passportNumber: '',
+			passportDate: '',
+			passportPlace: '',
+			passportCode: '',
+			address: [{
+			  description: '', // регистрации, проживания, почтовый etc
+			  index: '',
+			  subject: '',
+			  city: '',
+			  settlement: '',
+			  street: '',
+			  building: '',
+			  appartment: '',
+			}],
+			phone: [{
+			  description: '', // основной, дополнительный, рабочий etc
+			  number: ''
+			}], 
+			email: '',
+			comment: '',
+		  //   cases: [{
+		  //     idCase: { type: Schema.ObjectId, ref: 'cases' },
+		  // }]
+	})
+	const personRedux = useSelector(state => state.personReducer.person)
+    const [unmodified, setUnmodified] = useState(true)
+    
+	let personShortName = `${person.lastName} ${person.firstName[0]}. ${person.firstName[0]}.`
 
 	const personNames = {
 		lastName: person.lastName,
@@ -74,7 +68,7 @@ function PersonCard() {
 	console.log("person in state:", person);
 
 	function personCaseTrigger(data) {
-		console.log(data._id !== personRedux._id);
+		console.log(data._id !== personRedux._id)
 		if (data._id !== personRedux._id) {
 			dispatch(captureActionCreator(data));
 			dispatch(removeCaseActionCreator());
@@ -88,53 +82,47 @@ function PersonCard() {
 			const data = await getDataByIdFromURL("persons"); // TODO calling now even if there no id (create instead)
 			console.log("useEffect data: ", data);
 			personCaseTrigger(data);
-			setPerson(data);
+			setPerson(data)
 		}
 		getData();
 	}, []);
 
 	const onChange = (e, index) => {
-		const stateClone = structuredClone(person);
-		const { id, value } = e.target;
-		if (id.includes("-")) {
-			const [parentKey, childKey] = id.split("-");
+		const stateClone = structuredClone(person)
+		const { id, value } = e.target
+		if (id.includes('-')) {
+			const [parentKey, childKey] = id.split('-')
 			objectToInsert = {
 				...stateClone[parentKey][index],
-				[childKey]: value,
-			};
-			stateClone[parentKey][index] = objectToInsert;
-			setPerson(stateClone);
+				[childKey]: value
+			}
+			stateClone[parentKey][index] = objectToInsert
+			setPerson(stateClone)
 		} else {
-			stateClone[id] = value;
-			setPerson(stateClone);
+			stateClone[id] = value
+			setPerson(stateClone)
 		}
 		if (id === "middleName") {
 			if (value.slice(-1) === "а") {
-				stateClone.gender = "жен";
+				stateClone.gender = "жен"
 				setPerson(stateClone);
 			} else {
-				stateClone.gender = "муж";
+				stateClone.gender = "муж"
 				setPerson(stateClone);
 			}
 		}
-		setUnmodified(false);
-	};
-	const onChangeDate = (id, date) => {
-		const stateClone = { ...person };
-		stateClone[id] = date;
-		setPerson(stateClone);
-		setUnmodified(false);
-	};
+		setUnmodified(false)
+	}	  
 
 	function addAddressPhone(e) {
 		e.preventDefault();
-		const stateClone = structuredClone(person);
-		const { id } = e.target;
-		if (id === "phone") {
-			stateClone[id].push({
-				description: "",
-				number: "",
-			});
+		const stateClone = structuredClone(person)
+		const { id } = e.target
+		if (id === 'phone') {
+			stateClone[id].push({ 
+				description: "", 
+				number: "" 
+			})
 		} else {
 			stateClone[id].push({
 				description: "",
@@ -144,22 +132,22 @@ function PersonCard() {
 				street: "",
 				building: "",
 				appartment: "",
-			});
+			})
 		}
-		setPerson(stateClone);
+		setPerson(stateClone)
 	}
 
 	function removeAddressPhone(e, index) {
 		e.preventDefault();
-		const { id } = e.target;
-		const stateClone = structuredClone(person);
-		stateClone[id].splice(index, 1);
-		setPerson(stateClone);
+		const { id } = e.target
+		const stateClone = structuredClone(person)
+		stateClone[id].splice(index, 1)
+		setPerson(stateClone)
 	}
 
 	function revert(e) {
 		e.preventDefault();
-		setPerson(personRedux);
+		setPerson(personRedux)
 		// getPersonIdFromURL()
 		// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
 		// TODO personCaseTrigger({...personClone}))
@@ -170,25 +158,24 @@ function PersonCard() {
 		e.preventDefault();
 		// TODO correction(e)
 		const data = { ...person };
-		console.log(data);
+		console.log(data)
 		try {
-			await axios
-				.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, person)
-				.then((item) => {
-					console.log(item);
-					navigate(`/persons/id${item.data._id}`);
-					// TODO click on the /create doesn't empty form
-					// TODO buttons after creation doesn't changes
-					const dataFromURL = getDataByIdFromURL("persons");
-					data._id = item.data._id;
-					console.log(dataFromURL._id);
-					setPerson(item.data);
-					personCaseTrigger(item.data);
-					alert(`Клиент ${personShortName} создан в БД`);
-					// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-				});
+			await axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, person).
+			then((item) => {
+				console.log(item)
+				navigate(`/persons/id${item.data._id}`);
+				// TODO click on the /create doesn't empty form
+				// TODO buttons after creation doesn't changes
+				const dataFromURL = getDataByIdFromURL("persons");
+				data._id = item.data._id;
+				console.log(dataFromURL._id);
+				setPerson(item.data)
+				personCaseTrigger(item.data);
+				alert(`Клиент ${personShortName} создан в БД`);
+				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
+			})
 		} catch (error) {
-			console.error(error);
+			console.error(error)
 		}
 	}
 
@@ -205,9 +192,9 @@ function PersonCard() {
 					alert(`Данные ${personShortName} обновлены в БД`);
 					//   this.props.history.push(`/person/${this.props.match.params.id}`);
 				});
-			personCaseTrigger(person);
+			personCaseTrigger(person)
 		} catch (error) {
-			console.error(error);
+			console.error(error)
 		}
 	}
 
@@ -366,23 +353,13 @@ function PersonCard() {
 						{/* Дата Рождения */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="birth-date">Дата рождения</label>
-							<ReactInputDateMask
-								mask="dd.mm.yyyy"
-								showMaskOnFocus={true}
-								className="form-control"
-								value={person.birthDate}
-								onChange={onChange}
-								showMaskOnHover={true}
-							/>
 							<input
 								type="date"
 								className="form-control"
 								id="birthDate"
 								placeholder="1960-02-29"
 								// value={dayjs(person.birthDate).format("DD-MM-YYYY")}
-								value={dayjs(person.birthDate).format(
-									"YYYY-MM-DD"
-								)}
+								value={dayjs(person.birthDate).format('YYYY-MM-DD')}
 								onBlur={onChange}
 							/>
 							<div className="invalid-feedback">
@@ -412,9 +389,7 @@ function PersonCard() {
 								className="form-control"
 								id="passportDate"
 								min="1900-01-01"
-								value={dayjs(person.passportDate).format(
-									"yyyy-MM-dd"
-								)}
+								value={dayjs(person.passportDate).format('yyyy-MM-dd')}
 								onBlur={onChange}
 							/>
 							<div className="invalid-feedback">
@@ -496,24 +471,22 @@ function PersonCard() {
 					{person.address.map((el, index) => {
 						return (
 							<div className="row" key={index}>
-								<div className="col-md-2 mb-3">
-									<label htmlFor="address-type">
-										Тип адреса
-									</label>
+                                <div className="col-md-2 mb-3">
+									<label htmlFor="address-type">Тип адреса</label>
 									<input
 										type="text"
 										className="form-control"
-										list="descriptionList"
+                                        list="descriptionList"
 										id="address-description"
 										placeholder="регистрации"
 										value={el.description}
 										onChange={(e) => onChange(e, index)}
 									/>
-									<datalist id="descriptionList">
-										<option value="регистрации" />
-										<option value="проживания" />
-										<option value="рабочий" />
-									</datalist>
+                                        <datalist id="descriptionList">
+											<option value="регистрации" />
+											<option value="проживания" />
+											<option value="рабочий" />
+                                        </datalist>
 									<div className="invalid-feedback">
 										Valid index is required.
 									</div>
@@ -637,9 +610,7 @@ function PersonCard() {
 									<button
 										className="btn btn-outline-danger btn-sm btn-block"
 										id="address"
-										onClick={(e) =>
-											removeAddressPhone(e, index)
-										}
+										onClick={(e) => removeAddressPhone(e, index)}
 									>
 										удалить
 									</button>
@@ -687,10 +658,10 @@ function PersonCard() {
 										onChange={(e) => onChange(e, index)}
 									/>
 									<datalist id="phoneList">
-										<option value="основной" />
-										<option value="дополнительный" />
-										<option value="рабочий" />
-									</datalist>
+											<option value="основной" />
+											<option value="дополнительный" />
+											<option value="рабочий" />
+                                        </datalist>
 									<div className="invalid-feedback">
 										Valid phone number is required.
 									</div>
@@ -699,9 +670,7 @@ function PersonCard() {
 									<button
 										className="btn btn-outline-danger btn-sm btn-block"
 										id="phone"
-										onClick={(e) =>
-											removeAddressPhone(e, index)
-										}
+										onClick={(e) => removeAddressPhone(e, index)}
 									>
 										удалить
 									</button>
@@ -763,56 +732,56 @@ function PersonCard() {
 				</fieldset>
 				{/* КНОПКИ */}
 				<div className="footer-buttons">
-					{/*  */}
-					{!person._id && (
-						<button
-							className="btn btn-success btn-md btn-block"
-							onClick={clearPerson}
-							disabled={unmodified}
-						>
-							Очистить
-						</button>
-					)}
-					{/*  */}
-					{person._id && (
-						<button
-							className="btn btn-warning btn-md btn-block"
-							onClick={revert}
-							disabled={unmodified}
-						>
-							Вернуть исходные
-						</button>
-					)}
-					{/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
-					{!person._id && (
-						<button
-							className="btn btn-success btn-md btn-block"
-							type="submit"
-							onClick={createPerson}
-							disabled={unmodified && !person.lastName}
-						>
-							Создать нового
-						</button>
-					)}
-					{/*  */}
-					{person._id && (
-						<button
-							className="btn btn-primary btn-md btn-block"
-							onClick={savePerson}
-							disabled={unmodified}
-						>
-							Сохранить изменения
-						</button>
-					)}
-					{/*  */}
-					{person._id && (
-						<button
-							className="btn btn-danger btn-md btn-block"
-							onClick={deletePerson}
-						>
-							Удалить из БД
-						</button>
-					)}
+				{/*  */}
+				{!person._id && (
+					<button
+					className="btn btn-success btn-md btn-block"
+					onClick={clearPerson}
+                    disabled={unmodified}
+					>
+					Очистить
+				</button>
+                )}
+                {/*  */}
+				{person._id && (
+					<button
+					className="btn btn-warning btn-md btn-block"
+					onClick={revert}
+					disabled={unmodified}
+					>
+						Вернуть исходные
+					</button>
+				)}
+				{/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
+				{!person._id && (
+					<button
+					className="btn btn-success btn-md btn-block"
+					type="submit"
+					onClick={createPerson}
+					disabled={unmodified && !person.lastName}
+					>
+						Создать нового
+					</button>
+				)}
+				{/*  */}
+				{person._id && (
+					<button
+					className="btn btn-primary btn-md btn-block"
+					onClick={savePerson}
+					disabled={unmodified}
+					>
+						Сохранить изменения
+					</button>
+				)}
+				{/*  */}
+				{person._id && (
+					<button
+					className="btn btn-danger btn-md btn-block"
+					onClick={deletePerson}
+					>
+						Удалить из БД
+					</button>
+				)}
 				</div>
 			</form>
 			<CheckBeforeCreate
