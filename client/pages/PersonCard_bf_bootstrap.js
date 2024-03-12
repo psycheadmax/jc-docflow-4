@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
 import {
 	captureActionCreator,
 	removeActionCreator,
@@ -13,19 +12,23 @@ import axios from "axios";
 import { CheckBeforeCreate } from "../components/CheckBeforeCreate";
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
+import ReactInputDateMask from 'react-input-date-mask';
 require("dotenv").config();
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 function PersonCard() {
-	const emptyPerson = {
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const [person, setPerson] = useState({
 		lastName: "",
 		firstName: "",
 		middleName: "",
-		gender: "муж",
+		gender: "",
 		innNumber: "",
 		snilsNumber: "",
+		// birthDate: dayjs('2000-01-01').format('DD.MM.YYYY'),
 		birthDate: "",
 		birthPlace: "",
 		passportSerie: "",
@@ -33,72 +36,42 @@ function PersonCard() {
 		passportDate: "",
 		passportPlace: "",
 		passportCode: "",
-		address: [],
-		phone: [],
+		address: [
+			{
+				description: "", // регистрации, проживания, почтовый etc
+				index: "",
+				subject: "",
+				city: "",
+				settlement: "",
+				street: "",
+				building: "",
+				appartment: "",
+			},
+		],
+		phone: [
+			{
+				description: "", // основной, дополнительный, рабочий etc
+				number: "",
+			},
+		],
 		email: "",
-		comment: ""
-	}
-	const emptyAddress = {
-		description: "", // регистрации, проживания, почтовый etc
-		index: "",
-		subject: "",
-		city: "",
-		settlement: "",
-		street: "",
-		building: "",
-		appartment: "",
-	}
-	const emptyPhone = {
-		description: "", // основной, дополнительный, рабочий etc
-		number: "",
-	}
-	
-	useEffect(() => {
-		async function getData() {
-			const data = await getDataByIdFromURL("persons") || emptyPerson; // TODO calling now even if there no id (create instead)
-			console.log("useEffect data: ", data);
-			personCaseTrigger(data);
-			reset(data)
-		}
-		getData();
-	}, []);
-
-	const navigate = useNavigate();
-	const dispatch = useDispatch();
-	const personRedux = useSelector((state) => state.personReducer.person);
-	
-	const [person, setPerson] = useState(personRedux)
-
-	console.log('personRedux', personRedux);
-
-	const {
-		register,
-		handleSubmit,
-		watch,
-		control,
-		reset,
-		formState: { errors, isDirty, isValid },
-	} = useForm({
-		defaultValues: personRedux,
-		mode: 'onBlur'
+		comment: "",
+		//   cases: [{
+		//     idCase: { type: Schema.ObjectId, ref: 'cases' },
+		// }]
 	});
+	const personRedux = useSelector((state) => state.personReducer.person);
+	const [unmodified, setUnmodified] = useState(true);
 
-
-	const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
-		control,
-		name: "address",
-	  });
-	  const { fields: phoneFields, append: appendPhone, remove: removePhone } = useFieldArray({
-		control,
-		name: "phone",
-	  });
+	let personShortName = `${person.lastName} ${person.firstName[0]}. ${person.firstName[0]}.`;
 
 	const personNames = {
-		lastName: watch('lastName'),
-		firstName: watch('firstName'),
-		middleName: watch('middleName'),
+		lastName: person.lastName,
+		firstName: person.firstName,
+		middleName: person.middleName,
 	};
 
+	console.log("person in state:", person);
 
 	function personCaseTrigger(data) {
 		console.log(data._id !== personRedux._id);
@@ -110,8 +83,18 @@ function PersonCard() {
 		}
 	}
 
+	useEffect(() => {
+		async function getData() {
+			const data = await getDataByIdFromURL("persons"); // TODO calling now even if there no id (create instead)
+			console.log("useEffect data: ", data);
+			personCaseTrigger(data);
+			setPerson(data);
+		}
+		getData();
+	}, []);
+	
 	const onChange = (e, index) => {
-		const stateClone = structuredClone(personRedux);
+		const stateClone = structuredClone(person);
 		const { id, value } = e.target;
 		if (id.includes("-")) {
 			const [parentKey, childKey] = id.split("-");
@@ -134,20 +117,69 @@ function PersonCard() {
 				setPerson(stateClone);
 			}
 		}
+		setUnmodified(false);
+
 	};
 
-	async function createPerson(data) {
+	function addAddressPhone(e) {
+		e.preventDefault();
+		const stateClone = structuredClone(person);
+		const { id } = e.target;
+		if (id === "phone") {
+			stateClone[id].push({
+				description: "",
+				number: "",
+			});
+		} else {
+			stateClone[id].push({
+				description: "",
+				subject: "",
+				city: "",
+				settlement: "",
+				street: "",
+				building: "",
+				appartment: "",
+			});
+		}
+		setPerson(stateClone);
+	}
+
+	function removeAddressPhone(e, index) {
+		e.preventDefault();
+		const { id } = e.target;
+		const stateClone = structuredClone(person);
+		stateClone[id].splice(index, 1);
+		setPerson(stateClone);
+	}
+
+	function revert(e) {
+		e.preventDefault();
+		setPerson(personRedux);
+		// getPersonIdFromURL()
+		// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
+		// TODO personCaseTrigger({...personClone}))
+	}
+
+	async function createPerson(e) {
 		// TODO add check and modify within DB
+		e.preventDefault();
 		// TODO correction(e)
+		const data = { ...person };
 		console.log(data);
 		try {
 			await axios
-				.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, data) // TODO
+				.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, person)
 				.then((item) => {
-					console.log('item: ', item);
+					console.log(item);
 					navigate(`/persons/id${item.data._id}`);
+					// TODO click on the /create doesn't empty form
+					// TODO buttons after creation doesn't changes
+					const dataFromURL = getDataByIdFromURL("persons");
+					data._id = item.data._id;
+					console.log(dataFromURL._id);
+					setPerson(item.data);
 					personCaseTrigger(item.data);
-					alert(`Клиент ${item.data.lastName} ${item.data.firstName[0]}. ${item.data.middleName[0]}. создан в БД`);
+					alert(`Клиент ${personShortName} создан в БД`);
 					// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
 				});
 		} catch (error) {
@@ -155,15 +187,29 @@ function PersonCard() {
 		}
 	}
 
-	function onSubmit(data) {
-		console.log("onSubmit data", data);
-		createPerson(data)
+	async function savePerson(e) {
+		e.preventDefault();
+		correction(e);
+		const data = {
+			...person,
+		};
+		try {
+			await axios
+				.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/write`, person)
+				.then((person) => {
+					alert(`Данные ${personShortName} обновлены в БД`);
+					//   this.props.history.push(`/person/${this.props.match.params.id}`);
+				});
+			personCaseTrigger(person);
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	function deletePerson(e) {
 		e.preventDefault();
 		const reallyDelete = confirm(
-			`Действительно удалить клиента из БД?`
+			`Действительно удалить ${personShortName} из БД?`
 		);
 		if (reallyDelete) {
 			axios
@@ -171,7 +217,7 @@ function PersonCard() {
 					`${SERVER_IP}:${SERVER_PORT}/api/persons/delete/id${person._id}`
 				)
 				.then((data) => {
-					alert(`${data.lastName} удален из БД`);
+					alert(`${personShortName} удален из БД`);
 					// this.props.history.push(`/persons/create`); // TODO
 					dispatch(removeActionCreator());
 				});
@@ -181,7 +227,7 @@ function PersonCard() {
 
 	function correction(e) {
 		e.preventDefault();
-		const obj = structuredClone(personRedux);
+		const obj = structuredClone(person);
 		for (const id in obj) {
 			if (typeof obj[id] === "string") {
 				// firstLetterCapitalize
@@ -204,11 +250,16 @@ function PersonCard() {
 		personCaseTrigger(person);
 	}
 
+	function clearPerson(e) {
+		e.preventDefault();
+		dispatch(removeActionCreator());
+		navigate(`/person`);
+	}
+
 	return (
 		<div className="component">
-			<form onSubmit={handleSubmit(onSubmit)}>
+			<form>
 				<hr className="mb-4" />
-				{/* ФИО */}
 				<fieldset>
 					<legend className="bg-light">ФИО</legend>
 					<div className="row">
@@ -220,13 +271,13 @@ function PersonCard() {
 								className="form-control"
 								id="lastName"
 								placeholder="Иванов"
-								{...register("lastName", { required: true })}
+								value={person.lastName}
+								onChange={onChange}
+								required
 							/>
-							{errors.lastName && (
-								<span className="required-field">
-									Обязательное поле
-								</span>
-							)}
+							<div className="invalid-feedback">
+								Valid last name is required.
+							</div>
 						</div>
 						{/* Имя */}
 						<div className="col-md-3 mb-1">
@@ -236,13 +287,13 @@ function PersonCard() {
 								className="form-control"
 								id="firstName"
 								placeholder="Иван"
-								{...register("firstName", { required: true })}
+								value={person.firstName}
+								onChange={onChange}
+								required
 							/>
-							{errors.firstName && (
-								<span className="required-field">
-									Обязательное поле
-								</span>
-							)}
+							<div className="invalid-feedback">
+								Valid first name is required.
+							</div>
 						</div>
 						{/* Отчество */}
 						<div className="col-md-4 mb-3">
@@ -252,31 +303,28 @@ function PersonCard() {
 								className="form-control"
 								id="middleName"
 								placeholder="Иванович"
-								{...register("middleName")}
+								value={person.middleName}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid middle name is required.
+							</div>
 						</div>
 						{/* Пол */}
 						<div className="col-md-1 mb-3">
 							<label htmlFor="gender">Пол</label>
-							<Controller
-								name="gender"
-								control={control}
-								render={({ field: { onChange, value } }) => (
-									<select
-										id="gender"
-										className="form-select"
-										value={value}
-										onChange={onChange}
-									>
-										<option value="муж">муж</option>
-										<option value="жен">жен</option>
-									</select>
-								)}
-							/>
+							<select
+								id="gender"
+								className="form-select"
+								value={person.gender}
+								onChange={onChange}
+							>
+								<option value="муж">муж</option>
+								<option value="жен">жен</option>
+							</select>
 						</div>
 					</div>
 				</fieldset>
-				{/* ПАСПОРТ */}
 				<fieldset>
 					<legend className="bg-light">ПАСПОРТ</legend>
 					<div className="row">
@@ -288,8 +336,12 @@ function PersonCard() {
 								className="form-control"
 								id="passportSerie"
 								placeholder="8700"
-								{...register("passportSerie")}
+								value={person.passportSerie}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid passport serie is required.
+							</div>
 						</div>
 						{/* Номер паспорта */}
 						<div className="col-md-2 mb-3">
@@ -299,22 +351,28 @@ function PersonCard() {
 								className="form-control"
 								id="passportNumber"
 								placeholder="123456"
-								{...register("passportNumber")}
+								value={person.passportNumber}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid passport number is required.
+							</div>
 						</div>
 						{/* Дата Рождения */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="birth-date">Дата рождения</label>
-							<input
-								type="date"
+							<ReactInputDateMask
+								mask="dd.mm.yyyy"
+								showMaskOnFocus={true}
 								className="form-control"
+								value={person.birthDate}
+								onChange={onChange}
+								showMaskOnHover={true}
 								id="birthDate"
-								{...register("birthDate", {
-									onChange: (e) => {
-										onChange;
-									},
-								})}
 							/>
+							<div className="invalid-feedback">
+								Valid date is required.
+							</div>
 						</div>
 						{/* Место рождения */}
 						<div className="col-md-6 mb-3">
@@ -324,18 +382,38 @@ function PersonCard() {
 								className="form-control"
 								id="birthPlace"
 								placeholder="пп Москва - Воркута, вагон 5, место 23"
-								{...register("birthPlace")}
+								value={person.birthPlace}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid middle name is required.
+							</div>
 						</div>
 						{/* Дата выдачи паспорта */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="passport-date">Дата выдачи</label>
-							<input
+							<ReactInputDateMask
+								mask="dd.mm.yyyy"
+								showMaskOnFocus={true}
+								className="form-control"
+								value={person.passportDate}
+								onChange={onChange}
+								showMaskOnHover={true}
+								id="passportDate"
+							/>
+							{/* <input
 								type="date"
 								className="form-control"
 								id="passportDate"
-								{...register("passportDate")}
-							/>
+								min="1900-01-01"
+								value={dayjs(person.passportDate).format(
+									"yyyy-MM-dd"
+								)}
+								onBlur={onChange}
+							/> */}
+							<div className="invalid-feedback">
+								Valid date is required.
+							</div>
 						</div>
 						{/* Место выдачи паспорта */}
 						<div className="col-md-4 mb-3">
@@ -345,8 +423,12 @@ function PersonCard() {
 								className="form-control"
 								id="passportPlace"
 								placeholder="ОВД РСФСР при МВД СССР по Коми АСССР в г. Воркуте "
-								{...register("passportPlace")}
+								value={person.passportPlace}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid issue place is required.
+							</div>
 						</div>
 						{/* Код подразделения */}
 						<div className="col-md-2 mb-3">
@@ -358,12 +440,15 @@ function PersonCard() {
 								className="form-control"
 								id="passportCode"
 								placeholder="110-003"
-								{...register("passportCode")}
+								value={person.passportCode}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid number is required.
+							</div>
 						</div>
 					</div>
 				</fieldset>
-				{/* ИНН, СНИЛС */}
 				<fieldset>
 					<legend className="bg-light">ИНН, СНИЛС</legend>
 					<div className="row">
@@ -375,8 +460,12 @@ function PersonCard() {
 								className="form-control"
 								id="innNumber"
 								placeholder="110300400500"
-								{...register("innNumber")}
+								value={person.innNumber}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid number is required.
+							</div>
 						</div>
 						{/* СНИЛС Номер */}
 						<div className="col-md-2 mb-3">
@@ -386,182 +475,165 @@ function PersonCard() {
 								className="form-control"
 								id="snilsNumber"
 								placeholder="111-222-333 44"
-								{...register("snilsNumber")}
+								value={person.snilsNumber}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid number is required.
+							</div>
 						</div>
 					</div>
 				</fieldset>
 				{/* АДРЕСА */}
 				<fieldset>
 					<legend className="bg-light">АДРЕСА</legend>
-					{addressFields.map((field, index) => {
+					{person.address.map((el, index) => {
 						return (
-							<div className="row" key={field.id}>
+							<div className="row" key={index}>
 								<div className="col-md-2 mb-3">
 									<label htmlFor="address-type">
 										Тип адреса
 									</label>
-									{/* description */}
 									<input
 										type="text"
-										id="address-type"
 										className="form-control"
 										list="descriptionList"
-										{...register(`address.${index}.type`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
-										placeholder="Тип"
+										id="address-description"
+										placeholder="регистрации"
+										value={el.description}
+										onChange={(e) => onChange(e, index)}
 									/>
 									<datalist id="descriptionList">
 										<option value="регистрации" />
 										<option value="проживания" />
 										<option value="рабочий" />
 									</datalist>
+									<div className="invalid-feedback">
+										Valid index is required.
+									</div>
 								</div>
 								{/* Индекс */}
 								<div className="col-md-2 mb-3">
-									<label htmlFor="address-index">
-										Индекс
-									</label>
-									{/* index */}
+									<label htmlFor="address-city">Индекс</label>
 									<input
 										type="number"
-										id="address-index"
 										className="form-control"
-										{...register(`address.${index}.index`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
-										placeholder="Индекс"
+										id="address-index"
+										placeholder="169900"
+										value={el.index}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid index is required.
+									</div>
 								</div>
 								{/* Субъект */}
 								<div className="col-md-2 mb-3">
 									<label htmlFor="address-subject">
-										Субъект
+										Субъект (край, область, округ...)
 									</label>
-									{/* subject */}
 									<input
 										type="text"
-										id="address-subject"
 										className="form-control"
-										{...register(`address.${index}.subject`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
-										placeholder="Край, область, округ..."
+										id="address-subject"
+										placeholder="Республика Коми"
+										value={el.subject}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid subject is required.
+									</div>
 								</div>
 								{/* Город */}
 								<div className="col-md-3 mb-3">
 									<label htmlFor="address-city">Город</label>
-									{/* city */}
 									<input
 										type="text"
-										id="address-city"
 										className="form-control"
-										{...register(`address.${index}.city`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
-										placeholder="Город"
+										id="address-city"
+										placeholder="г. Воркута"
+										value={el.city}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid city is required.
+									</div>
 								</div>
 								{/* Населенный пункт */}
 								<div className="col-md-3 mb-3">
-									<label htmlFor="address-settlement">
+									<label htmlFor="address-city">
 										Населенный пункт
 									</label>
-									{/* settlement */}
 									<input
 										type="text"
-										id="address-settlement"
 										className="form-control"
-										{...register(
-											`address.${index}.settlement`,
-											{
-												onChange: (e) => {
-													onChange(e, index);
-												},
-											}
-										)}
-										placeholder="Населенный пункт"
+										id="address-settlement"
+										placeholder="пос. Цементнозаводский"
+										value={el.settlement}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid lcation is required.
+									</div>
 								</div>
 								{/* Улица */}
 								<div className="col-md-3 mb-3">
 									<label htmlFor="address-street">
 										Улица
 									</label>
-									{/* street */}
 									<input
 										type="text"
-										id="address-street"
 										className="form-control"
-										{...register(
-											`address.${index}.street`,
-											{
-												onChange: (e) => {
-													onChange(e, index);
-												},
-											}
-										)}
-										placeholder="Улица"
+										id="address-street"
+										placeholder="ул. Ватутина"
+										value={el.street}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid street is required.
+									</div>
 								</div>
 								{/* Дом */}
 								<div className="col-md-1 mb-3">
 									<label htmlFor="address-building">
 										Здание
 									</label>
-									{/* building */}
 									<input
 										type="text"
-										id="address-building"
 										className="form-control"
-										{...register(
-											`address.${index}.building`,
-											{
-												onChange: (e) => {
-													onChange(e, index);
-												},
-											}
-										)}
-										placeholder="Здание"
+										id="address-building"
+										placeholder="123/1 А"
+										value={el.building}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid building is required.
+									</div>
 								</div>
 								{/* Квартира */}
 								<div className="col-md-1 mb-3">
 									<label htmlFor="address-appartment">
 										Квартира
 									</label>
-									{/* appartment */}
 									<input
 										type="text"
-										id="address-appartment"
 										className="form-control"
-										{...register(
-											`address.${index}.appartment`,
-											{
-												onChange: (e) => {
-													onChange(e, index);
-												},
-											}
-										)}
-										placeholder="Квартира"
+										id="address-appartment"
+										placeholder="188"
+										value={el.appartment}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid appartments number is required.
+									</div>
 								</div>
 								<div className="col-md-1 mb-3">
 									<button
-										type="button"
 										className="btn btn-outline-danger btn-sm btn-block"
 										id="address"
-										onClick={() => removeAddress(index)}
+										onClick={(e) =>
+											removeAddressPhone(e, index)
+										}
 									>
 										удалить
 									</button>
@@ -571,10 +643,8 @@ function PersonCard() {
 					})}
 					<button
 						className="btn btn-light btn-md btn-block"
+						onClick={addAddressPhone}
 						id="address"
-						onClick={() =>
-							appendAddress(emptyAddress)
-						}
 					>
 						добавить адрес
 					</button>
@@ -582,51 +652,50 @@ function PersonCard() {
 				{/* ТЕЛЕФОНЫ */}
 				<fieldset>
 					<legend className="bg-light">ТЕЛЕФОНЫ</legend>
-					{phoneFields.map((field, index) => {
+					{person.phone.map((el, index) => {
 						return (
-							<div className="row" key={field.id}>
+							<div className="row" key={index}>
 								{/* Телефон*/}
 								<div className="col-md-2 mb-3">
 									<input
 										type="tel"
-										id="phone-number"
 										className="form-control"
-										{...register(`phone.${index}.number`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
-										placeholder="Номер"
+										id="phone-number"
+										placeholder="89121234567"
+										maxLength="11"
+										value={el.number}
+										onChange={(e) => onChange(e, index)}
 									/>
+									<div className="invalid-feedback">
+										Valid phone number is required.
+									</div>
 								</div>
 								<div className="col-md-2 mb-3">
 									<input
 										type="text"
-										id="phone-description"
 										className="form-control"
+										id="phone-description"
+										placeholder="сотовый"
 										list="phoneList"
-										{...register(
-											`phone.${index}.description`,
-											{
-												onChange: (e) => {
-													onChange(e, index);
-												},
-											}
-										)}
-										placeholder="Номер"
+										value={el.description}
+										onChange={(e) => onChange(e, index)}
 									/>
 									<datalist id="phoneList">
 										<option value="основной" />
 										<option value="дополнительный" />
 										<option value="рабочий" />
 									</datalist>
+									<div className="invalid-feedback">
+										Valid phone number is required.
+									</div>
 								</div>
 								<div className="col-md-1 mb-3">
 									<button
-										type="button"
 										className="btn btn-outline-danger btn-sm btn-block"
 										id="phone"
-										onClick={() => removePhone(index)}
+										onClick={(e) =>
+											removeAddressPhone(e, index)
+										}
 									>
 										удалить
 									</button>
@@ -636,10 +705,8 @@ function PersonCard() {
 					})}
 					<button
 						className="btn btn-light btn-md btn-block"
+						onClick={addAddressPhone}
 						id="phone"
-						onClick={() =>
-							appendPhone(emptyPhone)
-						}
 					>
 						добавить телефон
 					</button>
@@ -652,18 +719,23 @@ function PersonCard() {
 						<div className="col-md-2 mb-3">
 							<label htmlFor="email">
 								Электропочта
-								{/* <span className="text-muted">
+								<span className="text-muted">
 									{" "}
 									(необязательно)
-								</span> */}
+								</span>
 							</label>
 							<input
 								type="email"
 								className="form-control"
 								id="email"
 								placeholder="you@example.com"
-								{...register('email')}
+								value={person.email}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Please enter a valid email address for shipping
+								updates.
+							</div>
 						</div>
 
 						{/* Комментарий */}
@@ -674,43 +746,60 @@ function PersonCard() {
 								className="form-control"
 								id="comment"
 								placeholder="какой-то текст...."
-								{...register('comment')}
+								value={person.comment}
+								onChange={onChange}
 							/>
+							<div className="invalid-feedback">
+								Valid appartments number is required.
+							</div>
 						</div>
 					</div>
 				</fieldset>
 				{/* КНОПКИ */}
 				<div className="footer-buttons">
 					{/*  */}
-					<button
-						className="btn btn-success btn-md btn-block"
-						type="submit"
-						disabled={!isDirty || !isValid}
-					>
-						OK
-					</button>
-					{/*  */}
-					{!personRedux._id && (
+					{!person._id && (
 						<button
-							className="btn btn-warning btn-md btn-block"
-							onClick={() => {reset(personRedux)}}
-							disabled={!isValid}
+							className="btn btn-success btn-md btn-block"
+							onClick={clearPerson}
+							disabled={unmodified}
 						>
 							Очистить
 						</button>
 					)}
 					{/*  */}
-					{personRedux._id && (
+					{person._id && (
 						<button
 							className="btn btn-warning btn-md btn-block"
-							onClick={() => reset(emptyPerson)}
-							disabled={!isValid}
+							onClick={revert}
+							disabled={unmodified}
 						>
 							Вернуть исходные
 						</button>
 					)}
+					{/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
+					{!person._id && (
+						<button
+							className="btn btn-success btn-md btn-block"
+							type="submit"
+							onClick={createPerson}
+							disabled={unmodified && !person.lastName}
+						>
+							Создать нового
+						</button>
+					)}
 					{/*  */}
-					{personRedux._id && (
+					{person._id && (
+						<button
+							className="btn btn-primary btn-md btn-block"
+							onClick={savePerson}
+							disabled={unmodified}
+						>
+							Сохранить изменения
+						</button>
+					)}
+					{/*  */}
+					{person._id && (
 						<button
 							className="btn btn-danger btn-md btn-block"
 							onClick={deletePerson}

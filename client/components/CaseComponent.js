@@ -1,502 +1,424 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import axios from "axios";
 require("dotenv").config();
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
-import { useDispatch, useSelector } from "react-redux";
 import {
 	addCaseActionCreator,
 	removeCaseActionCreator,
 } from "../store/caseReducer";
+import { getCurrentYearNumbers, getUnusedNumbers } from '../functions';
+import { AgreementCaseProps } from "./caseProps/agreementCaseProps";
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 function CaseComponent() {
-	const person = useSelector((state) => state.personReducer.person);
-	const initialCaseData = {
-		_id: "",
-		caseTitle: "",
-		caseDate: dayjs().format("YYYY-MM-DD"),
-		caseCategory: "",
-		caseReceivedDocs: [
-			{
-				title: "",
-				have: false,
-			},
-		],
-		caseFlow: [
-			{
-				phase: "",
-				date: "",
-				comment: "",
-			},
-		],
-		caseReminder: [
-			{
-				title: "",
-				date: "",
-				active: false,
-				comment: "",
-			},
-		],
-		comment: "",
-		idPerson: person._id,
-	};
-	const [caseData, setCaseData] = useState(initialCaseData);
-
+	/* 
+	HOWTO create new doc data in case (caseProps)
+	1. copy and rename one of the components in caseProps directory
+	2. import it here
+	3. place it in <div className="case-props-switchers"> in appropriate case category
+	4. in caseProps component edit the handleChange() to send props in appropriate object
+	5. edit form (inputs, switchers etc...)
+	6. the end(?)
+	*/
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
-	const [unmodified, setUnmodified] = useState(true);
+	const location = useLocation();
 
+	const person = useSelector((state) => state.personReducer.person);
+	const caseRedux = useSelector((state) => state.caseReducer);
+	
+	const initialCaseProps = {
+		petition: { // for example
+			date: "12-02-2023",
+			otvetchik: "Ivanoff A.O.",
+		},
+		agreement: {
+			totalSum: 0,
+			agreementDate: dayjs().format("YYYY-MM-DD"),
+			payVariant: "в начале",
+			// 	initialSum: Number,
+			// 	intervalSum: Number,
+			// 	payPeriod: String,
+			//  payPeriodMultiplier: Number,
+		},
+	};
+	
+	console.log('caseRedux.caseProps: ', caseRedux.caseProps)
+	const [caseProps, setCaseProps] = useState(caseRedux.caseProps || initialCaseProps);
+	/* 
+	1. think about agreementCaseProps structure
+	
+	
+	*/
+	
+	
+	async function getData(e) {
+		const data = (await getDataByIdFromURL("cases")) || emptyCase; // TODO calling now even if there no id (create instead)
+		console.log("useEffect data: ", data);
+		dispatch(removeCaseActionCreator())
+		dispatch(addCaseActionCreator(data)) 
+		data.caseDate = dayjs(data.caseDate).format("YYYY-MM-DD");
+		reset(data);
+	}
+	
 	useEffect(() => {
-		const getData = async () => {
-			try {
-				const data = await getDataByIdFromURL("cases");
-				data && setCaseData(data);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			}
-		};
 		getData();
 	}, []);
 
-	useEffect(() => {
-		console.log("caseData:", caseData);
-	}, [caseData]);
-
-	function onChange(e, field) {
-		e.persist();
-		console.log("Event:", e);
-		console.log("Field:", field);
-		setCaseData((prevData) => {
-			// Use the previous state to create a shallow copy of the caseData
-			const updatedData = { ...prevData };
-
-			// Split the field path into an array
-			const fieldPath = field.split(".");
-			console.log("fieldPath", fieldPath);
-
-			// Navigate through the nested structure and update the target field
-			let currentLevel = updatedData;
-			for (let i = 0; i < fieldPath.length - 1; i++) {
-				if (fieldPath[i].includes("-")) {
-					const currentArr = fieldPath[i].split("-");
-					currentLevel = currentLevel[currentArr[0]][currentArr[1]];
-				} else {
-					currentLevel = currentLevel[fieldPath[i]];
-				}
-			}
-
-			// Handle the special case for checkboxes
-			if (e.target.type === "checkbox") {
-				console.log(currentLevel[fieldPath[fieldPath.length - 1]]);
-
-				currentLevel[fieldPath[fieldPath.length - 1]] =
-					e.target.checked;
-			} else {
-				currentLevel[fieldPath[fieldPath.length - 1]] = e.target.value;
-			}
-
-			console.log("Updated Data:", updatedData);
-
-			return updatedData;
-		});
-		setUnmodified(false);
-	}
-
-	const addNewArrayItem = (arrayName) => {
-		setCaseData((prevData) => {
-			const array = prevData[arrayName];
-			array.push({});
-			const newCaseData = { ...prevData };
-
-			return newCaseData;
-		});
+	// get all keys from caseProps to an array to highlight components with content
+	console.log(caseRedux)
+	const casePropsKeys = Object.keys(caseRedux.caseProps || []);
+	// LAST STOP 
+	// caseProps. what is it? recomended values or object for generate docs
+	// for example, agreement number where it must be specified? in caseProps or in docProps?
+	// DESICION
+	// remove caseProps
+	// divide TempAnyDoc2 to editor and form. move caseProps to docProps or kind of. 
+	// so related docs will look for props in each other
+	console.log(casePropsKeys)
+	
+	const emptyCase = {
+		// _id: "",
+		caseTitle: "",
+		caseDate: dayjs().format("YYYY-MM-DD"),
+		caseCategory: "",
+		caseReceivedDocs: [],
+		caseFlow: [],
+		caseReminder: [],
+		comment: "",
+		// idPerson: person._id,
+	};
+	const emptyDocs = {
+		title: "",
+		have: false,
+	};
+	const emptyFlow = {
+		phase: "",
+		date: dayjs().format("YYYY-MM-DD"),
+		comment: "",
+	};
+	const emptyReminder = {
+		title: "",
+		date: dayjs().format("YYYY-MM-DD"),
+		active: false,
+		comment: "",
 	};
 
-	const deleteArrayItem = (arrayName, index) => {
-		setCaseData((prevData) => {
-			const newArray = [...prevData[arrayName]];
-			newArray.splice(index, 1);
-			const newCaseData = { ...prevData, [arrayName]: newArray };
-			return newCaseData;
-		});
+	const {
+		register,
+		handleSubmit,
+		watch,
+		control,
+		reset,
+		formState: { errors, isDirty, isValid },
+	} = useForm({
+		defaultValues: emptyCase,
+		mode: "onBlur",
+	});
+
+	const {
+		fields: caseReceivedDocsFields,
+		append: appendCaseReceivedDocs,
+		remove: removeCaseReceivedDocs,
+	} = useFieldArray({
+		control,
+		name: "caseReceivedDocs",
+	});
+	const {
+		fields: caseFlowFields,
+		append: appendCaseFlow,
+		remove: removeCaseFlow,
+	} = useFieldArray({
+		control,
+		name: "caseFlow",
+	});
+	const {
+		fields: caseReminderFields,
+		append: appendCaseReminder,
+		remove: removeCaseReminder,
+	} = useFieldArray({
+		control,
+		name: "caseReminder",
+	});
+
+	const getChildCaseProps = (data) => {
+		const casePropsClone = structuredClone(caseProps);
+		setCaseProps(Object.assign(casePropsClone, data));
 	};
 
-	const clearCase = (e) => {
-		e.preventDefault();
-		console.log("clear case");
-		setCaseData(initialCaseData);
-		navigate("/cases/new");
-	};
-
-	const createCase = async (e) => {
-		e.preventDefault();
+	const saveCase = async (data) => {
 		const whatToFind = {
 			idPerson: person._id,
-			caseTitle: caseData.caseTitle
-		}
-		const check = await axios.post(`${SERVER_IP}:${SERVER_PORT}/api/cases`, whatToFind)
-		if (check.data.lenght) {
-			const message = `У ${person.lastName} ${person.firstName[0]}. ${person.middleName[0]}. уже есть "${caseData.caseTitle}".`
-			alert(message);
-			return
+			caseTitle: watch("caseTitle"),
+		};
+		const check = await axios.post(
+			`${SERVER_IP}:${SERVER_PORT}/api/cases/search`,
+			whatToFind
+		);
+		if (check.data.length) {
+			const message = `У ${person.lastName} ${person.firstName[0]}. ${
+				person.middleName[0]
+			}. уже есть ${watch("caseTitle")}. Сохранить изменения?`;
+			if (!confirm(message)) {
+				return;
+			}
+			// alert(message);
+			// return;
 		}
 
-		// TODO correction(e)
-		const data = structuredClone(caseData);
 		data.idPerson = person._id;
-		delete data._id;
+
+		// TODO send to redux but doesn't load case after clicking
+
 		const result = await axios.post(
 			`${SERVER_IP}:${SERVER_PORT}/api/cases/write`,
 			data
 		);
-		dispatch(removeCaseActionCreator());
+		// dispatch(removeCaseActionCreator());
 		dispatch(addCaseActionCreator(result.data));
-		setCaseData(result.data);
+		console.log('dispatched case data:', result.data)
 		navigate(`/cases/id${result.data._id}`);
-		const dataFromURL = getDataByIdFromURL("cases");
-		alert(`Данные ${result.data.caseTitle} обновлены в БД`);
+		// const dataFromURL = getDataByIdFromURL("cases");
+		alert(`Данные ${result.data.caseTitle} записаны в БД`);
 		// data._id = item.data._id;
 		// console.log(dataFromURL._id);
 		// dispatch(captureActionCreator(data));
 		// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
 	};
 
-	const saveCase = (e) => {
-		e.preventDefault();
-		console.log("saveCase");
-
-		const data = { ...caseData, idPerson: person._id };
-		axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/write`, data)
-			.then((item) => {
-				alert(`Данные ${item.caseTitle} обновлены в БД`);
-				//   this.props.history.push(`/person/${this.props.match.params.id}`);
-			});
-	};
-
-	const revert = () => {
-		e.preventDefault();
-		getDataByIdFromURL("cases");
-	};
-
 	const deleteCase = (e) => {
 		e.preventDefault();
 		const reallyDelete = confirm(`Действительно удалить это дело из БД?`);
 		if (reallyDelete) {
-			axios
-				.post(
-					`${SERVER_IP}:${SERVER_PORT}/api/cases/delete/id${caseData._id}`
-				)
-				.then((data) => {
-					alert(`Дело удалено из БД`);
-					// this.props.history.push(`/persons/create`); // TODO
-				});
-			navigate(`/cases`);
+			alert(`Sorry. We can't delete cases yet.`);
+			// axios
+			// 	.post(
+			// 		`${SERVER_IP}:${SERVER_PORT}/api/cases/delete/id${caseData._id}`
+			// 	)
+			// 	.then((data) => {
+			// 		alert(`Дело ${data._id} удалено из БД`);
+			// 		// this.props.history.push(`/persons/create`); // TODO
+			// 	});
+			// navigate(`/cases`);
 		}
 	};
 
+	function onSubmit(data) {
+		const dataClone = data;
+		dataClone.caseProps = caseProps;
+		console.log("onSubmit data", dataClone);
+		saveCase(data);
+	}
+
 	return (
-		<>
-			<div className="component">
-				<form>
-					<hr className="mb-4" />
-					<fieldset>
-						<legend className="bg-light">ФИО</legend>
-						<div className="row">
-							{/* Фамилия */}
-							<div className="col-md-4 mb-3">
-								<label htmlFor="lastName">Фамилия</label>
-								<input
-									type="text"
-									className="form-control"
-									id="lastName"
-									placeholder="Иванов"
-									value={person.lastName}
-									disabled
-								/>
-								<div className="invalid-feedback">
-									Valid last name is required.
-								</div>
-							</div>
-							{/* Имя */}
-							<div className="col-md-3 mb-3">
-								<label htmlFor="firstName">Имя</label>
-								<input
-									type="text"
-									className="form-control"
-									id="firstName"
-									placeholder="Иван"
-									value={person.firstName}
-									disabled
-								/>
-								<div className="invalid-feedback">
-									Valid first name is required.
-								</div>
-							</div>
-							{/* Отчество */}
-							<div className="col-md-4 mb-3">
-								<label htmlFor="middleName">Отчество</label>
-								<input
-									type="text"
-									className="form-control"
-									id="middleName"
-									placeholder="Иванович"
-									value={person.firstName}
-									disabled
-								/>
-								<div className="invalid-feedback">
-									Valid middle name is required.
-								</div>
-							</div>
+		<div className="component">
+			<form onSubmit={handleSubmit(onSubmit)}>
+				<hr className="mb-4" />
+				<fieldset>
+					<legend className="bg-light">Основное</legend>
+					<div className="row">
+						{/* Название дела */}
+						<div className="col-md-6 mb-3">
+							<label htmlFor="birth-place">Название дела</label>
+							<input
+								type="text"
+								className="form-control"
+								id="caseTitle"
+								placeholder="0123 Дело о недополученных миллионах"
+								{...register("caseTitle", {
+									required: true,
+								})}
+							/>
+							{errors.caseTitle && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
-					</fieldset>
-					<fieldset>
-						<legend className="bg-light">&nbsp;</legend>
-						<div className="row">
-							{/* Название дела */}
-							<div className="col-md-6 mb-3">
-								<label htmlFor="birth-place">
-									Название дела
+						<div className="col-md-3 mb-3">
+							<label htmlFor="birth-place">Категория дела</label>
+							<input
+								type="text"
+								className="form-control"
+								id="caseCategory"
+								placeholder="банкротство"
+								{...register("caseCategory")}
+							/>
+						</div>
+						{/* Дата создания*/}
+						<div className="col-md-2 mb-3">
+							<label htmlFor="case-date">Дата создания</label>
+							<input
+								type="date"
+								className="form-control"
+								id="caseDate"
+								placeholder="1960-02-29"
+								onChange={(e) => onChange(e, "caseDate")}
+								{...register("caseDate", {
+									required: true,
+								})}
+							/>
+							{errors.caseDate && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
+						</div>
+						<div className="col-md-10 mb-3">
+							<label htmlFor="comment">Комментарий</label>
+							<input
+								type="text"
+								className="form-control"
+								id="comment"
+								placeholder="какой-то текст"
+								{...register("comment")}
+							/>
+						</div>
+						{/* Case Received Docs */}
+						<fieldset>
+							<legend className="bg-light">
+								Принятые документы
+							</legend>
+							{caseReceivedDocsFields.map((field, index) => (
+								<div className="row" key={field.id}>
+									<div className="col-md-4 mb-3">
+										<label
+											htmlFor={`receivedDocsTitle-${index}`}
+										>
+											Название документа
+										</label>
+										<input
+											type="text"
+											className="form-control"
+											id={`receivedDocsTitle-${index}`}
+											placeholder="Копии квитанций ЖКУ"
+											{...register(
+												`caseReceivedDocs.${index}.title`,
+												{
+													onChange: (e) => {
+														onChange(e, index);
+													},
+												}
+											)}
+										/>
+									</div>
+									<div className="form-check col-md-1 mb-3">
+										<label
+											className="form-check-label"
+											htmlFor={`receivedDocsHave-${index}`}
+										>
+											Наличие
+										</label>
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id={`receivedDocsHave-${index}`}
+											{...register(
+												`caseReceivedDocs.${index}.have`
+											)}
+										/>
+									</div>
+
+									<div className="col-md-1 mb-3">
+										<button
+											type="button"
+											className="btn btn-outline-danger btn-sm"
+											id="caseReceivedDocs"
+											onClick={() =>
+												removeCaseReceivedDocs(index)
+											}
+										>
+											-
+										</button>
+									</div>
+								</div>
+							))}
+							<button
+								type="button"
+								className="btn btn-success btn-sm"
+								id="caseReceivedDocs"
+								onClick={() =>
+									appendCaseReceivedDocs(emptyDocs)
+								}
+							>
+								Добавить
+							</button>
+						</fieldset>
+					</div>
+				</fieldset>
+				{/* Case Flow */}
+				<fieldset>
+					<legend className="bg-light">Движение дела</legend>
+					{caseFlowFields.map((field, index) => (
+						<div className="row" key={field.id}>
+							<div className="col-md-4 mb-3">
+								<label htmlFor={`caseFlow-${index}`}>
+									Этап
 								</label>
 								<input
 									type="text"
 									className="form-control"
-									id="caseTitle"
-									placeholder="0123 Дело о недополученных миллионах"
-									value={caseData.caseTitle}
-									onChange={(e) => onChange(e, "caseTitle")}
+									id={`caseFlow-${index}`}
+									placeholder="Подготовка документов"
+									{...register(`caseFlow.${index}.phase`)}
 								/>
-								<div className="invalid-feedback">
-									Valid middle name is required.
-								</div>
 							</div>
-							<div className="col-md-3 mb-3">
-								<label htmlFor="birth-place">
-									Категория дела
-								</label>
-								<input
-									type="text"
-									className="form-control"
-									id="caseCategory"
-									placeholder="банкротство"
-									value={caseData.caseCategory}
-									onChange={(e) =>
-										onChange(e, "caseCategory")
-									}
-								/>
-								<div className="invalid-feedback">
-									Valid middle name is required.
-								</div>
-							</div>
-							{/* Дата создания*/}
 							<div className="col-md-2 mb-3">
-								<label htmlFor="birth-date">
-									Дата создания
+								<label htmlFor={`caseFlow-${index}`}>
+									Дата
 								</label>
 								<input
 									type="date"
 									className="form-control"
-									id="birthDate"
-									placeholder="1960-02-29"
-									value={dayjs(caseData.caseDate).format(
-										"YYYY-MM-DD"
-									)}
-									onChange={(e) => onChange(e, "caseDate")}
+									id={`caseFlow-${index}`}
+									placeholder="2023-11-21"
+									{...register(`caseFlow.${index}.date`)}
 								/>
-								<div className="invalid-feedback">
-									Valid date is required.
-								</div>
 							</div>
-							<div className="col-md-10 mb-3">
-								<label htmlFor="comment">Комментарий</label>
+							<div className="col-md-4 mb-3">
+								<label htmlFor={`caseFlow-${index}`}>
+									Комментарий
+								</label>
 								<input
 									type="text"
 									className="form-control"
-									id="comment"
-									placeholder="какой-то текст"
-									value={caseData.comment}
-									onChange={(e) => onChange(e, "comment")}
+									id={`caseFlow-${index}`}
+									placeholder="Какой-то комментарий"
+									{...register(`caseFlow.${index}.comment`)}
 								/>
-								<div className="invalid-feedback">
-									Valid date is required.
-								</div>
 							</div>
-							{/* Принятые документы начало */}
-							{/* Case Received Docs */}
-							<fieldset>
-								<legend className="bg-light">
-									Принятые документы
-								</legend>
-								{caseData.caseReceivedDocs.map((doc, index) => (
-									<div className="row" key={index}>
-										<div className="col-md-4 mb-3">
-											<label
-												htmlFor={`receivedDocsTitle-${index}`}
-											>
-												Название документа
-											</label>
-											<input
-												type="text"
-												className="form-control"
-												id={`receivedDocsTitle-${index}`}
-												placeholder="Копии квитанций ЖКУ"
-												value={doc.title}
-												onChange={(e) =>
-													onChange(
-														e,
-														`caseReceivedDocs-${index}.title`
-													)
-												}
-											/>
-										</div>
-										<div className="form-check col-md-1 mb-3">
-											<label
-												className="form-check-label"
-												htmlFor={`receivedDocsHave-${index}`}
-											>
-												Наличие
-											</label>
-											<input
-												className="form-check-input"
-												type="checkbox"
-												id={`receivedDocsHave-${index}`}
-												checked={doc.have}
-												onChange={(e) =>
-													onChange(
-														e,
-														`caseReceivedDocs-${index}.have`
-													)
-												}
-											/>
-										</div>
-
-										<div className="col-md-1 mb-3">
-											{/* Delete button for caseReceivedDocs */}
-											<button
-												type="button"
-												className="btn btn-outline-danger btn-sm"
-												onClick={() =>
-													deleteArrayItem(
-														"caseReceivedDocs",
-														index
-													)
-												}
-											>
-												-
-											</button>
-										</div>
-									</div>
-								))}
-								{/* Add more caseReceivedDocs fields dynamically */}
+							<div className="col-md-1 mb-3">
+								{/* Delete button for caseFlow */}
 								<button
 									type="button"
-									className="btn btn-success btn-sm"
-									onClick={() =>
-										addNewArrayItem("caseReceivedDocs")
-									}
+									className="btn btn-outline-danger btn-sm"
+									onClick={() => removeCaseFlow(index)}
 								>
-									Добавить
+									-
 								</button>
-							</fieldset>
-							{/* Принятые документы конец */}
-						</div>
-					</fieldset>
-					{/* Case Flow */}
-					<fieldset>
-						<legend className="bg-light">Движение дела</legend>
-						{caseData.caseFlow.map((flow, index) => (
-							<div className="row" key={index}>
-								{/* ... Similar structure as Case Received Docs ... */}
-								<div className="col-md-4 mb-3">
-									<label htmlFor={`caseFlow-${index}`}>
-										Этап
-									</label>
-									<input
-										type="text"
-										className="form-control"
-										id={`caseFlow-${index}`}
-										placeholder="Подготовка документов"
-										value={flow.title}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseFlow-${index}.phase`
-											)
-										}
-									/>
-								</div>
-								<div className="col-md-2 mb-3">
-									<label htmlFor={`caseFlow-${index}`}>
-										Дата
-									</label>
-									<input
-										type="date"
-										className="form-control"
-										id={`caseFlow-${index}`}
-										placeholder="2023-11-21"
-										value={dayjs(flow.date).format(
-											"YYYY-MM-DD"
-										)}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseFlow-${index}.date`
-											)
-										}
-									/>
-								</div>
-								<div className="col-md-4 mb-3">
-									<label htmlFor={`caseFlow-${index}`}>
-										Комментарий
-									</label>
-									<input
-										type="text"
-										className="form-control"
-										id={`caseFlow-${index}`}
-										placeholder="Какой-то комментарий"
-										value={flow.comment}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseFlow-${index}.comment`
-											)
-										}
-									/>
-								</div>
-								<div className="col-md-1 mb-3">
-									{/* Delete button for caseFlow */}
-									<button
-										type="button"
-										className="btn btn-outline-danger btn-sm"
-										onClick={() =>
-											deleteArrayItem("caseFlow", index)
-										}
-									>
-										-
-									</button>
-								</div>
-								{/* ... Similar structure as Case Received Docs END... */}
 							</div>
-						))}
-						{/* Add more caseFlow fields dynamically */}
-						<button
-							type="button"
-							className="btn btn-success btn-sm"
-							onClick={() => addNewArrayItem("caseFlow")}
-						>
-							Добавить
-						</button>
-					</fieldset>
-					{/* Case Reminder */}
-					<fieldset>
-						<legend className="bg-light">Напоминание</legend>
-						{caseData.caseReminder.map((reminder, index) => (
-							<div className="row" key={index}>
-								{/* ... Similar structure as Case Received Docs ... */}
+						</div>
+					))}
+					<button
+						type="button"
+						className="btn btn-success btn-sm"
+						onClick={() => appendCaseFlow(emptyFlow)}
+					>
+						Добавить
+					</button>
+				</fieldset>
+				{/* Case Reminder */}
+				<fieldset>
+					<legend className="bg-light">Напоминание</legend>
+					{caseReminderFields.map((field, index) => {
+						return (
+							<div className="row" key={field.id}>
 								<div className="col-md-4 mb-3">
 									<label htmlFor={`caseReminder-${index}`}>
 										Название
@@ -505,15 +427,15 @@ function CaseComponent() {
 										type="text"
 										className="form-control"
 										id={`caseReminder-${index}`}
-										placeholder="Какой-то комментарий"
-										value={reminder.title}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseReminder-${index}.title`
-											)
-										}
+										placeholder="Подать документы"
+										{...register(
+											`caseReminder.${index}.title`
+										)}
 									/>
+									{/* <span className="required-field">
+										Обязательное поле
+									</span> */}
+									{/* // TODO leave or remove? */}
 								</div>
 								<div className="col-md-2 mb-3">
 									<label htmlFor={`caseReminder-${index}`}>
@@ -524,15 +446,9 @@ function CaseComponent() {
 										className="form-control"
 										id={`caseReminder-${index}`}
 										placeholder="2020-11-20"
-										value={dayjs(reminder.date).format(
-											"YYYY-MM-DD"
+										{...register(
+											`caseReminder.${index}.date`
 										)}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseReminder-${index}.date`
-											)
-										}
 									/>
 								</div>
 
@@ -547,13 +463,9 @@ function CaseComponent() {
 										className="form-check-input"
 										type="checkbox"
 										id={`caseReminderActive-${index}`}
-										checked={reminder.active}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseReminder-${index}.active`
-											)
-										}
+										{...register(
+											`caseReminder.${index}.active`
+										)}
 									/>
 								</div>
 
@@ -566,102 +478,104 @@ function CaseComponent() {
 										className="form-control"
 										id={`caseReminder-${index}`}
 										placeholder="Какой-то комментарий"
-										value={reminder.comment}
-										onChange={(e) =>
-											onChange(
-												e,
-												`caseReminder-${index}.comment`
-											)
-										}
+										{...register(
+											`caseReminder.${index}.comment`
+										)}
 									/>
 								</div>
 								<div className="col-md-1 mb-3">
-									{/* Delete button for caseReceivedDocs */}
 									<button
 										type="button"
 										className="btn btn-outline-danger btn-sm"
 										onClick={() =>
-											deleteArrayItem(
-												"caseReminder",
-												index
-											)
+											removeCaseReminder(index)
 										}
 									>
 										-
 									</button>
 								</div>
-								{/* ... Similar structure as Case Received Docs END... */}
 							</div>
-						))}
-						{/* Add more caseReminder fields dynamically */}
-						<button
-							type="button"
-							className="btn btn-success btn-sm"
-							onClick={() => addNewArrayItem("caseReminder")}
-						>
-							Добавить
-						</button>
-					</fieldset>
-					{/* КНОПКИ */}
+						);
+					})}
+					<button
+						type="button"
+						className="btn btn-success btn-sm"
+						onClick={() => appendCaseReminder(emptyReminder)}
+					>
+						Добавить
+					</button>
+				</fieldset>
+				{/* HERE WE LOAD BUTTONS AND COMPONENTS DEPENDING ON CATEGORY */}
+				{/* HERE WILL BE LISTED ALL COMPONENTS */}
+				{/* MB MOVE IT FURTHER TO DB*/}
+				{location.pathname.startsWith("/cases/id") ? (
+					<div className="case-props-switchers">
+						{/* Договор */}
+						{/*
+						 TODO 
+						 HERE MUST BE DEFINED ALL COMPONENTS
+						 THAT MUST BE LOADED DEPENDING ON CASE CATEGORY
+						*/}
+						<AgreementCaseProps
+							styleClass={
+								casePropsKeys.includes("agreement")
+									? "case-props-exist"
+									: "case-props-no"
+							}
+							getChildCaseProps={getChildCaseProps}
+							caseProps={caseProps}
+						/>
+					</div>
+				) : (
+					<div className="case-props-unavailable">
+						Сохраните дело, чтобы добавить данные договора и другим
+						документам этой категории
+					</div>
+				)}
+				{/* КНОПКИ */}
+				<div className="footer-buttons">
 					{/*  */}
-					&nbsp;
-					{!caseData._id && (
+					<button
+						className="btn btn-success btn-md btn-block"
+						type="submit"
+						// disabled={!isDirty || !isValid} TODO fix isDirty so editing caseProps setting isDirty to true
+						disabled={!isValid}
+					>
+						OK
+					</button>
+					{/*  */}
+					{/*
+					TODO "вернуть исходные" doesn't work
+					remove "Очистить"
+					*/}
+					{!caseRedux._id && (
 						<button
 							className="btn btn-success btn-md btn-block"
-							onClick={clearCase}
-							disabled={unmodified}
+							onClick={() => reset(caseRedux)}
 						>
 							Очистить
 						</button>
 					)}
-					&nbsp;
-					{/* СОЗДАТЬ НОВОГО КЛИЕНТА. СОХРАНИТЬ  ВВЕДЕННЫЕ ДАННЫЕ*/}
-					{!caseData._id && (
-						<button
-							className="btn btn-success btn-md btn-block"
-							type="submit"
-							onClick={createCase}
-							disabled={unmodified || caseData.caseTitle === ''}
-						>
-							Создать новое
-						</button>
-					)}
-					&nbsp;
 					{/*  */}
-					{caseData._id && (
-						<button
-							className="btn btn-primary btn-md btn-block"
-							onClick={saveCase}
-							disabled={unmodified}
-						>
-							Сохранить изменения
-						</button>
-					)}
-					&nbsp;
-					{/*  */}
-					{caseData._id && (
+					{caseRedux._id && (
 						<button
 							className="btn btn-warning btn-md btn-block"
-							onClick={revert}
-							disabled={unmodified}
+							onClick={(e) => getData(e)}
 						>
 							Вернуть исходные
 						</button>
 					)}
-					&nbsp;
 					{/*  */}
-					{caseData._id && (
-						<button
-							className="btn btn-danger btn-md btn-block"
-							onClick={deleteCase}
-						>
-							Удалить из БД
-						</button>
-					)}
-					&nbsp;
-				</form>
-			</div>
-		</>
+					<button
+						className="btn btn-danger btn-md btn-block"
+						onClick={deleteCase}
+						disabled // TODO consider how it might work with existing docs in db
+					>
+						Удалить из БД
+					</button>
+				</div>
+			</form>
+		</div>
 	);
 }
 

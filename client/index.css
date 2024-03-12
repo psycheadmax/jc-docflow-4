@@ -129,8 +129,37 @@ body {
   color:crimson
 }
 
-div.footer-buttons button {
+div.footer-buttons button,
+div.page-buttons button {
   margin-right: 10px;
+}
+
+.footer-buttons {
+  position: fixed;
+  bottom: 10px;
+}
+
+span.required-field {
+  color: crimson;
+  font-size: 10px;
+}
+
+.Content {
+  margin-bottom: 80px;
+}
+
+.case-props-switchers {
+  padding-top: 10px;
+  border-top:2px solid #ccc;
+  margin-top: 20px;
+}
+
+.case-props-exist {
+  text-decoration: underline;
+}
+
+.case-props-no {
+  text-decoration: none;
 }
 
 /* Editor styles */

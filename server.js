@@ -234,7 +234,7 @@ app.post("/api/cases/write", (req, res) => {
 	});
 });
 
-app.post("/api/cases", (req, res) => {
+app.post("/api/cases/search", (req, res) => {
 	const data = {
 		...req.body,
 	};
@@ -283,19 +283,17 @@ app.post("/api/docs/check", (req, res) => {
 
 // Create and Update doc
 app.post("/api/docs/write", (req, res) => {
-	AnyDoc.findOne(req.body, (err, doc) => {
-		if (doc) {
-			AnyDoc.findByIdAndUpdate(doc._id, req.body, {
-				upsert: false,
-			}).then((updated) => {
-				res.json(updated);
-			});
-		} else {
-			AnyDoc.create(req.body).then((created) => {
-				res.json(created);
-			});
-		}
-	});
+if (req.body._id) {
+	AnyDoc.findByIdAndUpdate(req.body._id, req.body, {
+			upsert: false,
+		}).then((updated) => {
+			res.json(updated);
+		});
+} else {
+	AnyDoc.create(req.body).then((created) => {
+			res.json(created);
+		});
+}
 });
 
 // Get One of Docs
@@ -336,6 +334,7 @@ app.post("/api/docs/search", (req, res) => {
 			res.json(docs);
 		});
 });
+
 // END OF DOCS ================================================
 
 // DOCTEMPLATES ==============================================

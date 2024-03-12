@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { caseReducer, addCaseActionCreator, removeCaseActionCreator } from '../store/caseReducer'
@@ -26,16 +26,16 @@ function Cases() {
 		},
 	]);
 
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	
 	async function getCasesById(data) {
 		axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases`, data)
+			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/search`, data)
 			.then((cases) => {
 				setCases(cases.data);
 			});
 	}
-
-	const navigate = useNavigate();
-	const dispatch = useDispatch();
 
 	const person = useSelector((state) => state.personReducer.person);
 
@@ -57,31 +57,8 @@ function Cases() {
 	}
 
 	function newCase(e) {
-		// e.preventDefault();
-        const data = {
-            idPerson: person._id,
-            caseReceivedDocs: [
-                {
-                    title: "",
-                    have: false,
-                },
-            ],
-            caseFlow: [
-                {
-                    phase: "",
-                    date: "",
-                    comment: "",
-                },
-            ],
-            caseReminder: [
-                {
-                    title: "",
-                    date: "",
-                    active: false,
-                    comment: "",
-                },
-            ],
-        }
+		e.preventDefault();
+		dispatch(removeCaseActionCreator())
 		navigate(`/cases/new`);
 		/* axios
 			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/write`, data)
@@ -104,7 +81,7 @@ function Cases() {
 				<button
 					type="button"
 					className="btn btn-primary"
-					onClick={() => newCase()}
+					onClick={(e) => newCase(e)}
 				>
 					+ новое дело
 				</button>

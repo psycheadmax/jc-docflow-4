@@ -30,31 +30,42 @@ function DocsListFilter({ person }) {
 	});
 
 	const [docs, setDocs] = useState([]);
+	const [caseNames, setCaseNames] = useState([]);
+	const [types, setTypes] = useState([]);
+	const [isFirstTime, setIsFirstTime] = useState(true);
 
 	useEffect(() => {
 		searchDocs();
 	}, [filter]); // [filter] - condition to re-render
 
+	useEffect(() => {
+		searchCaseNames();
+	}, []);
+
+	useEffect(() => {
+		searchUniqueTypes();
+	}, [docs]);
+
+	function onFilterChange() {}
+
 	function onChange(e) {
-		if (e.target.value === "noValue") {
+		const { id, value } = e.target;
+		if (value === "noValue") {
 			const filterCopy = structuredClone(filter);
-			delete filterCopy[e.target.id];
+			delete filterCopy[id];
 			setFilter(filterCopy);
 		} else {
 			setFilter({
 				...filter,
-				[e.target.id]: e.target.value,
+				[id]: value,
 			});
 		}
+		console.log("current filter", filter);
 	}
 
 	async function loadState(e, id) {
 		e.preventDefault();
 		console.log("clicked:", id);
-		// try {
-		// LAST STOP  what if something undefined
-		// case can be undefined
-		// template is undefined while its PKO
 		const doc = await axios.get(
 			`${SERVER_IP}:${SERVER_PORT}/api/docs/id${id}`
 		);
@@ -84,20 +95,40 @@ function DocsListFilter({ person }) {
 			dispatch(addTemplateActionCreator(result.data));
 		}
 		navigate(`/docs/id${doc.data._id}`);
-		// } catch (error) {
-		// 	console.log(error)
-		// }
 	}
 
 	async function searchDocs() {
 		try {
-			const response = await axios.post(
+			const responce = await axios.post(
 				`${SERVER_IP}:${SERVER_PORT}/api/docs/search`,
 				filter
 			);
-			setDocs(response.data);
+			setDocs(responce.data);
+			console.log("docs found: ", responce.data);
 		} catch (error) {
 			console.log(error);
+		}
+	}
+
+	async function searchCaseNames() {
+		try {
+			const responce = await axios.post(
+				`${SERVER_IP}:${SERVER_PORT}/api/cases/search`,
+				filter
+			);
+			console.log("cases found:", responce.data);
+			setCaseNames(responce.data);
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	function searchUniqueTypes() {
+		if (docs.length > 0 && isFirstTime) {
+			const uniqueTypes = [...new Set(docs.map((item) => item.type))];
+			setTypes(uniqueTypes);
+			console.log("types found:", uniqueTypes);
+			setIsFirstTime(false);
 		}
 	}
 
@@ -123,20 +154,22 @@ function DocsListFilter({ person }) {
 				</div>
 				{/* Дело */}
 				<div className="col-md-4 mb-3">
-					<label htmlFor="caseTitle">Дело</label>
+					<label htmlFor="idCase">Дело</label>
 					<select
 						className="form-select form-select-md mb-3"
 						aria-label=".form-select-sm example"
-						id="caseTitle"
+						id="idCase"
 						onChange={(e) => onChange(e)}
 					>
 						<option defaultValue value="noValue">
 							Не выбрано
 						</option>
-						{person.cases &&
-							person.cases.map((item, index) => (
+						{caseNames &&
+							caseNames.map((item, index) => (
 								<option key={index} value={item._id}>
-									{item.caseTitle}
+									{`${item.caseTitle} от ${dayjs(
+										item.caseDate
+									).format("DD.MM.YYYY")}`}
 								</option>
 							))}
 					</select>
@@ -154,27 +187,33 @@ function DocsListFilter({ person }) {
 						<option defaultValue value="noValue">
 							Не выбрано
 						</option>
-						<option value="ПКО">ПКО</option>
-						<option value="Договор">Договор</option>
+						{types &&
+							types.map((item, index) => (
+								<option key={index} value={item}>
+									{`${item}`}
+								</option>
+							))}
 					</select>
 				</div>
 			</div>
 			<hr className="mb-4" />
-			<h3>{`Для ${person.lastName} ${person.firstName} ${person.middleName} есть ${len} документов`}</h3>
+			<h3>{`Для ${person.lastName} ${person.firstName} ${
+				person.middleName
+			} есть ${len} документов на сумму ${docs.reduce((acc, item) => {
+				return acc + (item.sum || 0);
+			}, 0)} руб.`}</h3>
 			<ul className="list-group">
 				{docs.map((item, index) => (
 					<li className="list-group-item" key={index} id={item._id}>
 						{/* <Link to={{ pathname: `/docs/id${item._id}` }} onClick={() => loadState(item._id)}> */}
 						<Link onClick={(e) => loadState(e, item._id)}>
-							{
-							`${item.name}  • 
+							{`${item.name}  • 
 							${item.type}  • 
 							${item.description} • 
 							${dayjs(item.date).format("DD.MM.YYYY")} • 
 							клиент:${item.idPerson} • 
 							дело:${item.idCase} • 
-							${item.sum}руб.`
-							}
+							${item.sum}руб.`}
 						</Link>
 					</li>
 				))}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import {
 	addTemplateActionCreator,
 	removeTemplateActionCreator,
@@ -8,6 +9,7 @@ import { addDocActionCreator, removeDocActionCreator } from '../store/docReducer
 import { Editor } from "@tinymce/tinymce-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Modal from '../components/Modal';
 
 import htmlDocx from "html-docx-js";
 import { saveAs } from "file-saver";
@@ -16,6 +18,7 @@ import {
 	createTokens,
 	fromTokensToResult,
 	getDataByIdFromURL,
+	paymentsSchedule
 } from "../functions";
 
 const dayjs = require("dayjs");
@@ -38,14 +41,14 @@ function TempAnyDoc2() {
 	const [previewType, setPreviewType] = useState("tokens");
 	const [tokens, setTokens] = useState(createTokens(person));
 	const [templateData, setTemplateData] = useState(template);
-
 	const [initialTemplateTitle, setInitialTemplateTitle] = useState(
 		templateData.title
 	);
 	const [destinationDocName, setDestinationDocName] = useState(
 		doc.name ||
-			`${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - ${templateData.type}`
+		`${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - ${templateData.type}`
 	);
+	const [modalActive, setModalActive] = useState(false)
 
 	useEffect(() => {
 		console.log("tokens in state");
@@ -142,6 +145,7 @@ function TempAnyDoc2() {
 						dispatch(removeTemplateActionCreator());
 						dispatch(addTemplateActionCreator(item.data));
 						alert(`Шаблон ${item.data.title} создан`);
+						setModalActive(false)
 						// const dataFromURL = getDataByIdFromURL('doctemplates')
 						// data._id = item.data._id
 						// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
@@ -261,12 +265,16 @@ function TempAnyDoc2() {
 				`Вы действительно хотите удалить документ "${destinationDocName}"?`
 			)
 		) {
+			// TODO think about doc deletion
 			alert(`Документ "${destinationDocName}" удален`);
 		}
 	};
 
+	console.log(paymentsSchedule())
+
 	return (
 		<>
+			{/* TOKENS */}
 			<div
 				style={{
 					display: "flex",
@@ -289,72 +297,128 @@ function TempAnyDoc2() {
 						)
 				)}
 			</div>
+			{/* TOKENS END */}
+			{/* DOCUMENT */}
 			<div className="row">
-				<div className="col-md-5 mb-3">
+				<div className="col-md-6 mb-3">
 					{/* <label htmlFor='title'>
 										Имя шаблона
 									</label> */}
 					<input
 						type="text"
 						className="form-control"
-						id="title"
-						placeholder="Имя шаблона"
-						value={templateData.title}
+						id="destinationDocName"
+						placeholder="Имя документа"
+						value={destinationDocName}
 						onChange={(e) => onChange(e)}
 					/>
 				</div>
 				<div className="col-md-4 mb-3">
 					{/* КНОПКИ */}
-					{/*  */}
-					{templateData.content && (
-						<button
-							className="btn btn-primary btn-md btn-block btn-sm"
-							onClick={saveDocTemp}
-						>
-							Сохранить шаблон
-						</button>
-					)}
-					&nbsp;
-					{/*  */}
-					{templateData.content && (
-						<button
-							className="btn btn-danger btn-md btn-block btn-sm"
-							onClick={deleteDocTemp}
-						>
-							Удалить
-						</button>
-					)}
-					&nbsp;
+					<div className="page-buttons">
+						{/*  */}
+						{templateData.content && (
+							<button
+								className="btn btn-primary btn-md btn-block btn-sm"
+								onClick={saveDoc}
+							>
+								Сохранить документ
+							</button>
+						)}
+						{/*  */}
+						{doc._id && (
+							<button
+								className="btn btn-danger btn-md btn-block btn-sm"
+								onClick={deleteDoc}
+								disabled={doc._id}
+							>
+								Удалить документ
+							</button>
+						)}
+					</div>
+				</div>
+				<div className="col-md-2 mb-3">
+					<button className="btn btn-outline-primary btn-md btn-block btn-sm" onClick={() => setModalActive(true)}>Управление шаблоном</button>
 				</div>
 			</div>
-			<div className="row">
-				<div className="col-md-3 mb-3">
-					{/* <label htmlFor='title'>
-										Имя шаблона
-									</label> */}
-					<input
-						type="text"
-						className="form-control"
-						id="type"
-						placeholder="Тип шаблона"
-						value={templateData.type}
-						onChange={(e) => onChange(e)}
-					/>
+			{/* DOCUMENT END */}
+			{/* TEMPLATE */}
+			<Modal active={modalActive} setActive={setModalActive}>
+				<div className="row">
+					<div className="col-md-12 mb-3">
+						<label htmlFor='title'>
+											Имя
+										</label>
+						<input
+							type="text"
+							className="form-control"
+							id="title"
+							placeholder="Имя шаблона"
+							value={templateData.title}
+							onChange={(e) => onChange(e)}
+						/>
+					</div>
 				</div>
-				<div className="col-md-9 mb-3">
-					{/* <label htmlFor='title'>
-										Имя шаблона
-									</label> */}
-					<input
-						type="text"
-						className="form-control"
-						id="description"
-						placeholder="Описание шаблона"
-						value={templateData.description}
-						onChange={(e) => onChange(e)}
-					/>
+				<div className="row">
+					<div className="col-md-6 mb-3">
+						<label htmlFor='title'>
+											Тип
+										</label>
+						<input
+							type="text"
+							className="form-control"
+							id="type"
+							placeholder="Тип шаблона"
+							value={templateData.type}
+							onChange={(e) => onChange(e)}
+						/>
+					</div>
+					<div className="col-md-6 mb-3">
+						<label htmlFor='scenario'>
+											Scenario
+										</label>
+						<input
+							type="text"
+							className="form-control"
+							id="type"
+							placeholder="пока не реализовано"
+							value={templateData.scenario}
+							onChange={(e) => onChange(e)}
+						/>
+					</div>
+					<div className="col-md-12 mb-3">
+						<label htmlFor='title'>Описание</label>
+						<textarea class="form-control" id="description" rows="3" value={templateData.description} placeholder='Описание'></textarea>
+					</div>
 				</div>
-			</div>
+				<div className="row">
+					<div className="footer-buttons">
+						<div className="col-md-6 mb-3">
+							{/* КНОПКИ */}
+							{/*  */}
+							{templateData.content && (
+								<button
+									className="btn btn-primary btn-md btn-block btn-sm"
+									onClick={saveDocTemp}
+								>
+									Сохранить шаблон
+								</button>
+							)}
+							{/*  */}
+							{templateData.content && (
+								<button
+									className="btn btn-danger btn-md btn-block btn-sm"
+									onClick={deleteDocTemp}
+								>
+									Удалить
+								</button>
+							)}
+						</div>
+					</div>
+				</div>
+			</Modal>
+			{/* TEMPLATE END*/}
+			{/* TINYMCE EDITOR */}
 			<form>
 				<Editor
 					tinymceScriptSrc={TINYMCEPATH}
@@ -493,45 +557,7 @@ function TempAnyDoc2() {
 				</button>
 				<button onClick={callSave}>Сгенерировать Ворд</button>
 			</form>
-			<div className="row">
-				<div className="col-md-5 mb-3">
-					{/* <label htmlFor='title'>
-										Имя шаблона
-									</label> */}
-					<input
-						type="text"
-						className="form-control"
-						id="destinationDocName"
-						placeholder="Имя документа"
-						value={destinationDocName}
-						onChange={(e) => onChange(e)}
-					/>
-				</div>
-				<div className="col-md-4 mb-3">
-					{/* КНОПКИ */}
-					<div className="footer-buttons">
-						{/*  */}
-						{templateData.content && (
-							<button
-								className="btn btn-primary btn-md btn-block btn-sm"
-								onClick={saveDoc}
-							>
-								Сохранить документ
-							</button>
-						)}
-						{/*  */}
-						{doc._id && (
-							<button
-								className="btn btn-danger btn-md btn-block btn-sm"
-								onClick={deleteDoc}
-								disabled={doc._id}
-							>
-								Удалить документ
-							</button>
-						)}
-					</div>
-				</div>
-			</div>
+			{/* TINYMCE EDITOR END*/}
 		</>
 	);
 }

@@ -1,5 +1,25 @@
 const initialState = {
-    case: {}
+    case: {
+        caseTitle: "",
+		caseDate: "",
+		caseCategory: "",
+		caseReceivedDocs: [],
+		caseFlow: [],
+		caseReminder: [],
+		comment: "",
+        caseProps: {
+            // agreement: {
+            //     totalSum: 100,
+            //     agreementDate: "",
+            //     agreementNumber: 1,
+            //     payVariant: "в начале",
+                // 	initialSum: Number,
+                // 	intervalSum: Number,
+                // 	payPeriod: String,
+                //  payPeriodMultiplier: Number,
+            // }
+        }
+    }
 }
 
 const ADDCASE = 'ADDCASE'

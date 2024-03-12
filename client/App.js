@@ -1,7 +1,5 @@
 import React from 'react';
-
 import { Routes, Route } from 'react-router-dom'
-
 import { Layout } from './components/Layout';
 import { Main } from './pages/Main';
 import { PageNotFound } from './pages/PageNotFound';
