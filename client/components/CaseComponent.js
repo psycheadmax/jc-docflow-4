@@ -10,53 +10,17 @@ import {
 	addCaseActionCreator,
 	removeCaseActionCreator,
 } from "../store/caseReducer";
-import { getCurrentYearNumbers, getUnusedNumbers } from '../functions';
-import { AgreementCaseProps } from "./caseProps/agreementCaseProps";
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 function CaseComponent() {
-	/* 
-	HOWTO create new doc data in case (caseProps)
-	1. copy and rename one of the components in caseProps directory
-	2. import it here
-	3. place it in <div className="case-props-switchers"> in appropriate case category
-	4. in caseProps component edit the handleChange() to send props in appropriate object
-	5. edit form (inputs, switchers etc...)
-	6. the end(?)
-	*/
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const location = useLocation();
 
 	const person = useSelector((state) => state.personReducer.person);
 	const caseRedux = useSelector((state) => state.caseReducer);
-	
-	const initialCaseProps = {
-		petition: { // for example
-			date: "12-02-2023",
-			otvetchik: "Ivanoff A.O.",
-		},
-		agreement: {
-			totalSum: 0,
-			agreementDate: dayjs().format("YYYY-MM-DD"),
-			payVariant: "в начале",
-			// 	initialSum: Number,
-			// 	intervalSum: Number,
-			// 	payPeriod: String,
-			//  payPeriodMultiplier: Number,
-		},
-	};
-	
-	console.log('caseRedux.caseProps: ', caseRedux.caseProps)
-	const [caseProps, setCaseProps] = useState(caseRedux.caseProps || initialCaseProps);
-	/* 
-	1. think about agreementCaseProps structure
-	
-	
-	*/
-	
 	
 	async function getData(e) {
 		const data = (await getDataByIdFromURL("cases")) || emptyCase; // TODO calling now even if there no id (create instead)
@@ -70,18 +34,6 @@ function CaseComponent() {
 	useEffect(() => {
 		getData();
 	}, []);
-
-	// get all keys from caseProps to an array to highlight components with content
-	console.log(caseRedux)
-	const casePropsKeys = Object.keys(caseRedux.caseProps || []);
-	// LAST STOP 
-	// caseProps. what is it? recomended values or object for generate docs
-	// for example, agreement number where it must be specified? in caseProps or in docProps?
-	// DESICION
-	// remove caseProps
-	// divide TempAnyDoc2 to editor and form. move caseProps to docProps or kind of. 
-	// so related docs will look for props in each other
-	console.log(casePropsKeys)
 	
 	const emptyCase = {
 		// _id: "",
@@ -121,7 +73,6 @@ function CaseComponent() {
 		defaultValues: emptyCase,
 		mode: "onBlur",
 	});
-
 	const {
 		fields: caseReceivedDocsFields,
 		append: appendCaseReceivedDocs,
@@ -146,11 +97,6 @@ function CaseComponent() {
 		control,
 		name: "caseReminder",
 	});
-
-	const getChildCaseProps = (data) => {
-		const casePropsClone = structuredClone(caseProps);
-		setCaseProps(Object.assign(casePropsClone, data));
-	};
 
 	const saveCase = async (data) => {
 		const whatToFind = {
@@ -210,8 +156,6 @@ function CaseComponent() {
 	};
 
 	function onSubmit(data) {
-		const dataClone = data;
-		dataClone.caseProps = caseProps;
 		console.log("onSubmit data", dataClone);
 		saveCase(data);
 	}
@@ -505,41 +449,13 @@ function CaseComponent() {
 						Добавить
 					</button>
 				</fieldset>
-				{/* HERE WE LOAD BUTTONS AND COMPONENTS DEPENDING ON CATEGORY */}
-				{/* HERE WILL BE LISTED ALL COMPONENTS */}
-				{/* MB MOVE IT FURTHER TO DB*/}
-				{location.pathname.startsWith("/cases/id") ? (
-					<div className="case-props-switchers">
-						{/* Договор */}
-						{/*
-						 TODO 
-						 HERE MUST BE DEFINED ALL COMPONENTS
-						 THAT MUST BE LOADED DEPENDING ON CASE CATEGORY
-						*/}
-						<AgreementCaseProps
-							styleClass={
-								casePropsKeys.includes("agreement")
-									? "case-props-exist"
-									: "case-props-no"
-							}
-							getChildCaseProps={getChildCaseProps}
-							caseProps={caseProps}
-						/>
-					</div>
-				) : (
-					<div className="case-props-unavailable">
-						Сохраните дело, чтобы добавить данные договора и другим
-						документам этой категории
-					</div>
-				)}
 				{/* КНОПКИ */}
 				<div className="footer-buttons">
 					{/*  */}
 					<button
 						className="btn btn-success btn-md btn-block"
 						type="submit"
-						// disabled={!isDirty || !isValid} TODO fix isDirty so editing caseProps setting isDirty to true
-						disabled={!isValid}
+						disabled={!isDirty || !isValid} 
 					>
 						OK
 					</button>

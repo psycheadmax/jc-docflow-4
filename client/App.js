@@ -15,6 +15,7 @@ import { Registration } from './pages/Registration';
 import { TempReceiptForm } from './docTemplates/TempReceiptForm';
 import { TempAnyDoc } from './docTemplates/TempAnyDoc';
 import { TempAnyDoc2 } from './docTemplates/TempAnyDoc2';
+import { TemplateAgreement } from './docTemplates/TemplateAgreement';
 
 function App() {
   return(
@@ -35,6 +36,7 @@ function App() {
         <Route path='docs/receipt' element={<TempReceiptForm />} />
         <Route path='docs/anydoc' element={<TempAnyDoc />} />
         <Route path='docs/anydoc2' element={<TempAnyDoc2 />} />
+        <Route path='docs/templateagreement' element={<TemplateAgreement />} />
         <Route path='*' element={<PageNotFound />} />
       </Route>
     </Routes>

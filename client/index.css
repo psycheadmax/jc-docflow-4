@@ -76,6 +76,8 @@ body {
 
 .row {
   align-items: center;
+  display:flex;
+  align-items: baseline;
 }
 
 /* react-draft-wysiwyg styles (TempAnyDoc) */

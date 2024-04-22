@@ -298,7 +298,7 @@ function TempAnyDoc2() {
 				)}
 			</div>
 			{/* TOKENS END */}
-			{/* DOCUMENT */}
+			{/* DOCUMENT buttons */}
 			<div className="row">
 				<div className="col-md-6 mb-3">
 					{/* <label htmlFor='title'>
@@ -342,7 +342,7 @@ function TempAnyDoc2() {
 				</div>
 			</div>
 			{/* DOCUMENT END */}
-			{/* TEMPLATE */}
+			{/* TEMPLATE buttons */}
 			<Modal active={modalActive} setActive={setModalActive}>
 				<div className="row">
 					<div className="col-md-12 mb-3">

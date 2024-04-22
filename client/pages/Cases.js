@@ -43,10 +43,8 @@ function Cases() {
 		getCasesById({ idPerson: person._id });
 	}, []);
 
-	console.log("person._id: ");
-	console.log(person._id);
-	console.log("cases: ");
-	console.log(cases);
+	console.log("person._id: ", person._id);
+	console.log("cases: ", cases);
 
 	function onChange(e) {
 		console.log(e.target.value);

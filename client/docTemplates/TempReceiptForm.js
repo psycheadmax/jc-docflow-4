@@ -5,6 +5,7 @@ import ReactDOM from "react-dom";
 import TempReceiptGen from "./TempReceiptGen";
 import {
 	getDataByIdFromURL,
+	deleteRub,
 	getCurrentYearNumbers,
 	getUnusedNumbers,
 } from "../functions";
@@ -111,13 +112,6 @@ function TempReceiptForm() {
 			cashier: "Д.А. Пахмутов",
 		},
 	};
-
-	function deleteRub(str) {
-		const one = str.replace(" рубль 00 копеек", "");
-		const two = one.replace(" рубля 00 копеек", "");
-		const three = two.replace(" рублей 00 копеек", "");
-		return three;
-	}
 
 	function onSumChange() {
 		const result = deleteRub(rubles(getValues("sum")));

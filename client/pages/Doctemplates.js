@@ -47,6 +47,9 @@ function Doctemplates() {
 						<li>
 							<Link to="/docs/anydoc2">AnyDoc2</Link> • 
 						</li>
+						<li>
+							<Link to="/docs/templateagreement">Договор</Link> • 
+						</li>
 						{templateList.map((template, index) => (
 							<li key={index}>
 								<Link

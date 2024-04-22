@@ -19,6 +19,11 @@ const sessionStorage = require("sessionstorage-for-nodejs");
 const dbURI = process.env["DB_URI"];
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SECRET_KEY = process.env["SECRET_KEY"];
+const ALLOWED_IPS = process.env["ALLOWED_IPS"];
+const PUBLIC_URL = process.env["PUBLIC_URL"];
+const CORS_ORIGIN = process.env["CORS_ORIGIN"]
+const CORS_METHODS = process.env["CORS_METHODS"]
+const CORS_ALLOWED_HEADERS = process.env["CORS_ALLOWED_HEADERS"]
 
 // As of this edit, Mongoose is now at v5.4.13. Per their docs, these are the fixes for the deprecation warnings...
 mongoose.set("useNewUrlParser", true);
@@ -46,15 +51,17 @@ const generateAccessToken = (id, username, roles) => {
 };
 
 // Enable CORS
-app.use(
-	cors({
-		origin: ["http://localhost:1234"],
-	})
-);
+const corsOptions = {
+	origin: CORS_ORIGIN,
+	methods: CORS_METHODS,
+	allowedHeaders: CORS_ALLOWED_HEADERS,
+  };
 
-// old CORS enabling
+app.use(cors(corsOptions));
+
+// // old CORS enabling
 // app.use((req, res, next) => {
-//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader("Access-Control-Allow-Origin", PUBLIC_URL);
 //   res.setHeader(
 //     "Access-Control-Allow-Headers",
 //     "Origin, X-Requested-With, Content-Type, Accept"
@@ -66,6 +73,20 @@ app.use(
 // app.use('/api', authMiddleware, (req, res, next) => {
 //   next()
 // })
+
+// const allowedIPs = process.env["ALLOWED_IPS"].split(' ');
+// let clientIP
+// app.use((req, res, next) => {
+//		console.log(`Your IP is: ${clientIP}`);
+//     clientIP = req.ip;
+//     if (allowedIPs.includes(clientIP)) {
+// 		console.log('client is OK')
+//         next();
+//     } else {
+// 		console.log('client is BLOCKED')
+//         res.status(403).send('Forbidden');
+//     }
+// });
 
 // NEXT Here insert use authRouter and authController !!!
 app.post("/login", async (req, res) => {
@@ -127,7 +148,6 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-	console.log("get users");
 	const users = User.find();
 	res.json(users);
 });
@@ -212,12 +232,10 @@ app.post("/api/persons/delete/:id", (req, res) => {
 
 // CASES =======================================
 app.post("/api/cases/write", (req, res) => {
-	console.log(req.body);
 	const data = {
 		// id: req.body.id,
 		...req.body,
 	};
-	console.log("data", data);
 
 	Case.findOne({ _id: req.body._id }, (err, caseItem) => {
 		if (caseItem) {
@@ -245,11 +263,9 @@ app.post("/api/cases/search", (req, res) => {
 
 app.get("/api/cases/:id", (req, res) => {
 	const id = req.params.id.replace("id", "");
-	console.log("looking for id: ", id);
 	Case.findOne({ _id: id })
 		.populate("idPerson")
 		.then((caseData) => {
-			console.log(caseData);
 			res.json(caseData);
 		});
 });
@@ -270,7 +286,6 @@ app.get("/api/docs/receipt/html", function (req, res) {
 		__dirname,
 		"/client/doctemplates/receipt/receipt.html"
 	);
-	console.log("pathToHTML:" + pathToHTML);
 	res.sendFile(pathToHTML);
 });
 
@@ -298,12 +313,10 @@ if (req.body._id) {
 
 // Get One of Docs
 app.get("/api/docs/:id", (req, res) => {
-	// console.log(`Get One of Docs. Doc: ${req.params.id}`)
 	const id = req.params.id.replace("id", "");
 	AnyDoc.findOne({ _id: id })
 		.populate("cases")
 		.then((doc) => {
-			console.log(doc);
 			res.json(doc);
 		});
 });
@@ -352,6 +365,13 @@ app.post("/api/doctemplates/check", (req, res) => {
 	});
 });
 
+// search doctemplate
+app.post("/api/doctemplates/search", (req, res) => {
+	DocTemplate.findOne(req.body).then((doctemplate) => {
+		res.json(doctemplate);
+	});
+});
+
 app.get("/api/doctemplates/:id", (req, res) => {
 	const id = req.params.id.replace("id", "");
 	DocTemplate.findOne({ _id: id }).then((doctemplate) => {
@@ -361,21 +381,33 @@ app.get("/api/doctemplates/:id", (req, res) => {
 
 // write new doctemplate or save current
 app.post("/api/doctemplates/write", (req, res) => {
-	console.log(req.body);
-	DocTemplate.findOne(req.body, (err, doctemplate) => {
-		if (doctemplate) {
-			DocTemplate.findByIdAndUpdate(doctemplate._id, req.body, {
+	if (req.body._id) {
+			DocTemplate.findByIdAndUpdate(req.body._id, req.body, {
 				upsert: false,
 			}).then((updated) => {
 				res.json(updated);
 			});
 		} else {
-			delete req.body._id;
+			req.body.title = req.body.title + ' КОПИЯ'
 			DocTemplate.create(req.body).then((created) => {
 				res.json(created);
 			});
 		}
-	});
+	// DocTemplate.findOne(req.body.title, (err, doctemplate) => {
+	// 	console.log(doctemplate);
+		// if (doctemplate) {
+		// 	DocTemplate.findByIdAndUpdate(doctemplate._id, req.body, {
+		// 		upsert: false,
+		// 	}).then((updated) => {
+		// 		res.json(updated);
+		// 	});
+		// } else {
+		// 	delete req.body._id;
+		// 	DocTemplate.create(req.body).then((created) => {
+		// 		res.json(created);
+		// 	});
+		// }
+	// });
 });
 
 // delete doctemplate
@@ -399,9 +431,9 @@ async function serverStart() {
 			}, //TODO MB remove useFindAndModify: false
 			() => console.log("Connected to MongoDB")
 		);
-		app.listen(SERVER_PORT, () =>
+		app.listen(SERVER_PORT, () =>{
 			console.log(`Server is running on port ${SERVER_PORT}`)
-		);
+		});
 	} catch (error) {
 		console.log("Server error", error.message);
 		process.exit(1);
