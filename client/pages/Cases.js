@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { caseReducer, addCaseActionCreator, removeCaseActionCreator } from '../store/caseReducer'
@@ -16,8 +16,9 @@ function Cases() {
 	const [cases, setCases] = useState([
 		{
 			idPerson: "",
-			caseN: "",
+			caseTitle: "",
 			caseDate: "",
+			caseCategory: "",
 			caseReceivedDocs: [], // [Title of the doc, Have] TODO find where to enter received docs
 			caseFlow: [], // [Phase, Date, Comment] TODO
 			caseReminder: [], // TODO [Title, Date, Active, Comment]
@@ -25,16 +26,16 @@ function Cases() {
 		},
 	]);
 
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	
 	async function getCasesById(data) {
 		axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases`, data)
+			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/search`, data)
 			.then((cases) => {
 				setCases(cases.data);
 			});
 	}
-
-	const navigate = useNavigate();
-	const dispatch = useDispatch();
 
 	const person = useSelector((state) => state.personReducer.person);
 
@@ -42,10 +43,8 @@ function Cases() {
 		getCasesById({ idPerson: person._id });
 	}, []);
 
-	console.log("person._id: ");
-	console.log(person._id);
-	console.log("cases: ");
-	console.log(cases);
+	console.log("person._id: ", person._id);
+	console.log("cases: ", cases);
 
 	function onChange(e) {
 		console.log(e.target.value);
@@ -56,32 +55,10 @@ function Cases() {
 	}
 
 	function newCase(e) {
-		// e.preventDefault();
-        const data = {
-            idPerson: person._id,
-            caseReceivedDocs: [
-                {
-                    title: "",
-                    have: false,
-                },
-            ],
-            caseFlow: [
-                {
-                    phase: "",
-                    date: "",
-                    comment: "",
-                },
-            ],
-            caseReminder: [
-                {
-                    title: "",
-                    date: "",
-                    active: false,
-                    comment: "",
-                },
-            ],
-        }
-		axios
+		e.preventDefault();
+		dispatch(removeCaseActionCreator())
+		navigate(`/cases/new`);
+		/* axios
 			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/write`, data)
 			.then((item) => {
 				console.log("item: ");
@@ -93,7 +70,7 @@ function Cases() {
 				// console.log(dataFromURL._id);
 				// dispatch(captureActionCreator(data));
 				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-			});
+			}); */
 	}
 
 	return (
@@ -102,7 +79,7 @@ function Cases() {
 				<button
 					type="button"
 					className="btn btn-primary"
-					onClick={() => newCase()}
+					onClick={(e) => newCase(e)}
 				>
 					+ новое дело
 				</button>
@@ -117,7 +94,7 @@ function Cases() {
 									pathname: `/cases/id${item._id}`,
 								}}
 							>
-								{item.caseN} от {item.caseDate}
+								{item.caseTitle} от {dayjs(item.caseDate).format('DD.MM.YYYY')}
 							</Link>
 						</li>
 					) : null

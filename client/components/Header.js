@@ -1,24 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { Link, withRouter } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { Link, useLocation, useNavigate} from "react-router-dom";
 import { NavLink } from "react-router-dom";
+import { removeActionCreator } from '../store/personReducer';
+import { removeCaseActionCreator } from '../store/caseReducer';
+import { removeTemplateActionCreator } from '../store/templateReducer';
+import { removeDocActionCreator } from '../store/docReducer';
 import axios from "axios";
+import dayjs from 'dayjs';
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 function Header() {
-	const state = useSelector((state) => state);
-	console.log("useSelector(state)", state);
+	const dispatch = useDispatch()
+	const state = useSelector(state => state);
+	console.log('Header state: ', state)
+	const location = useLocation()
+	const navigate = useNavigate()
 
 	const person = useSelector((state) => state.personReducer.person);
-	const caseName = useSelector((state) => state.caseReducer);
 	const template = useSelector((state) => state.templateReducer);
+	const caseName = useSelector((state) => state.caseReducer);
+	const doc = useSelector((state) => state.docReducer);
 
 	console.log("caseName: ", caseName);
 
-	// const [logged, setLogged] = useState()
-	// TODO set  КЛИЕНТ link '/create ' or '..../id' if there person id
+	function clearState() {
+		dispatch(removeActionCreator())
+		dispatch(removeCaseActionCreator())
+		dispatch(removeTemplateActionCreator())
+		dispatch(removeDocActionCreator())
+		if (location.pathname.startsWith('/persons')) {
+			navigate('/person')
+		}
+		if (location.pathname.startsWith('/docs/id')) {
+			navigate('/docs')
+		}
+	}
 
 	function logout(e) {
 		e.preventDefault();
@@ -51,7 +70,10 @@ function Header() {
 							</li>
 							&nbsp;
 							<li>
-								<NavLink to="/create">Клиент</NavLink>
+								{person._id ? 
+									<NavLink to={`/persons/id${person._id}`}>Клиент</NavLink> :
+									<NavLink to={`/person`}>Клиент</NavLink>
+								}
 							</li>
 							&nbsp; | &nbsp;
 							<li>
@@ -85,16 +107,22 @@ function Header() {
 					</header>
 				</div>
 				<div className="fromReduxState">
+				{(person._id || caseName._id || template._id || doc._id) && (<button
+					className="btn btn-outline-danger btn-sm btn-block"
+					onClick={clearState}
+					>
+					&#9747;
+				</button>)}
 					<Link
 						to={{
 							pathname: `/persons/id${person._id}`,
 						}}
 					>
-						{person.innNumber && `ИНН: ${person.innNumber}, `}
+						{person.innNumber && ` ИНН: ${person.innNumber}, `}
 						{person.lastName} {person.firstName}{" "}
 						{person.middleName && `${person.middleName}`}
 					</Link>
-					{caseName._id ? (
+					{(caseName._id) ? (
 						<span>
 						&nbsp;|&nbsp;
 							<Link
@@ -102,13 +130,13 @@ function Header() {
 									pathname: `/cases/id${caseName._id}`,
 								}}
 							>
-								{caseName.caseN && `${caseName.caseN}`}
+								{caseName.caseTitle && `${caseName.caseTitle}`}
 								{caseName.createdAt &&
-									` от ${caseName.createdAt}`}
+									` от ${dayjs(caseName.createdAt).format('DD.MM.YYYY')}`}
 							</Link>
 						</span>
 					) : (
-						<span className="attention"> | Дело не выбрано</span>
+						person._id && <span className="attention"> | Дело не выбрано</span>
 					)}
 
 					{template._id && ` | `}
@@ -118,6 +146,15 @@ function Header() {
 						}}
 					>
 						{template.title && `${template.title}`}
+					</Link>
+					
+					{doc._id && ` | `}
+					<Link
+						to={{
+							pathname: `/docs/id${doc._id}`,
+						}}
+					>
+						{doc.name && `${doc.name}`}
 					</Link>
 				</div>
 			</div>

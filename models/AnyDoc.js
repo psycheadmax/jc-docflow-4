@@ -3,7 +3,9 @@ const Schema = mongoose.Schema;
 
 const AnyDoc = new Schema({
     idPerson : { type: Schema.Types.ObjectId, ref: 'Person' },
-    caseN: [{ type: Schema.Types.ObjectId, ref: 'Person' }],
+    // caseN: { type: Schema.Types.ObjectId, ref: 'Person' },
+    idCase: { type: Schema.Types.ObjectId, ref: 'Case' },
+    name: String,
     type: String, // ПКО, Договор
     description: String,
     date: Date,
@@ -26,6 +28,9 @@ const AnyDoc = new Schema({
             text: String
           } */
     },
+    idTemplate: { type: Schema.Types.ObjectId, ref: 'DocTemplate' },
+    templateString: String,
+    templateResultString: String,
 } ,
 {timestamps: true}); 
 

@@ -1,0 +1,29 @@
+# Ignore specific files or directories in the Docker build context
+
+# Ignore all files and directories with a .git extension
+.git
+.gitignore
+
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore node_modules directory
+# node_modules/
+
+# Ignore npm debug log
+npm-debug.log
+
+# Ignore Docker related files and directories
+Dockerfile
+.dockerignore
+
+# cache and IDEs
+.cache
+.idea
+.vscode
+
+# secret files
+# .env
+todo.md
+somenotes.js

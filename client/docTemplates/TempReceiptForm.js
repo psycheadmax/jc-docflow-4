@@ -1,20 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
-import ReactDOM from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
-import petrovich from "petrovich";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import ReactDOM from "react-dom";
 import TempReceiptGen from "./TempReceiptGen";
-import { CaseNComponent } from "../components/CaseNComponent";
 import {
 	getDataByIdFromURL,
-	getCurrentYearPKONumbers,
-	getUnusedPKONumbers,
+	deleteRub,
+	getCurrentYearNumbers,
+	getUnusedNumbers,
 } from "../functions";
-import isEqual from 'lodash/isEqual'
+import isEqual from "lodash/isEqual";
+import petrovich from "petrovich";
 import axios from "axios";
 require("dotenv").config();
 import { TempReceiptDoc } from "./TempReceiptDoc";
 import "./TempReceiptForm.css";
 import { useReactToPrint } from "react-to-print";
+import {
+	addDocActionCreator,
+	removeDocActionCreator,
+} from "../store/docReducer";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
@@ -23,8 +29,28 @@ const rubles = require("rubles").rubles;
 const dayjs = require("dayjs");
 
 function TempReceiptForm() {
+	const {
+		register,
+		handleSubmit,
+		watch,
+		getValues,
+		setValue,
+		control,
+		reset,
+		resetField,
+		formState: { errors, isDirty, isValid },
+	} = useForm({
+		defaultValues: initialReceipt,
+		mode: "onBlur",
+	});
 	const dispatch = useDispatch();
 	const person = useSelector((state) => state.personReducer.person);
+	const caseName = useSelector((state) => state.caseReducer);
+	const doc = useSelector((state) => state.docReducer);
+
+	const navigate = useNavigate();
+	const location = useLocation();
+	const [isExisting, _] = useState(location.pathname.startsWith("/docs/id"));
 
 	const personForPetrovich = {
 		first: person.firstName,
@@ -34,19 +60,48 @@ function TempReceiptForm() {
 
 	const personGenitive = petrovich(personForPetrovich, "genitive");
 
-	const [PKONumbers, setPKONumbers] = useState([]);
+	let nums = [];
 
-	const [receiptData, setReceiptData] = useState({
+	async function getPKONumbers() {
+		const numbers = await getCurrentYearNumbers('ПКО');
+		const unusedNumbers = getUnusedNumbers(numbers);
+		return unusedNumbers;
+	}
+	async function fetchData() {
+		const data = await getDataByIdFromURL("docs");
+		console.log("data fetched in usEffect: ", data);
+		if (data) {
+			data.date = dayjs(data.date).format("YYYY-MM-DD");
+			reset(data);
+		}
+	}
+
+	useEffect(async () => {
+		nums = await getPKONumbers();
+		if (isExisting) {
+			fetchData();
+		} else {
+			reset(initialReceipt);
+		}
+		setValue("number", nums[0]);
+	}, []);
+
+	let currentValues = getValues();
+
+	useEffect(() => {
+		currentValues = getValues();
+	});
+
+	const initialReceipt = {
 		idPerson: person._id,
-		caseN: person.cases || [], // || []
+		idCase: caseName._id,
 		type: "ПКО", // ПКО, Договор
-		description: "no description",
+		description: "",
 		date: dayjs().format("YYYY-MM-DD"),
-		number: 1,
+		number: "",
 		sum: 1000,
 		sumLetters: "одна тысяча",
 		docProps: {
-			// TODO work it, check structure
 			lastNameGenitive: personGenitive.last,
 			firstNameGenitive: personGenitive.first,
 			middleNameGenitive: personGenitive.middle,
@@ -56,181 +111,99 @@ function TempReceiptForm() {
 			mainAccountant: "Д.А. Пахмутов",
 			cashier: "Д.А. Пахмутов",
 		},
-	});
+	};
 
-	useEffect(() => {
-        async function fetchData() {
-          const data = await getDataByIdFromURL("docs");
-          console.log("useEffect Data: ", data);
-          if (data) {
-            setReceiptData(data);
-          }
-        }
-      
-        async function initializeReceipt() {
-          const numbers = await getCurrentYearPKONumbers();
-          const unusedNumbers = getUnusedPKONumbers(numbers);
-          setPKONumbers(unusedNumbers);
-      
-          // Update the receiptData with the first PKONumber
-          setReceiptData(prevReceiptData => ({
-            ...prevReceiptData,
-            number: unusedNumbers[0] // Assuming unusedNumbers is not empty
-          }));
-        }
-        
-        fetchData();
-        initializeReceipt();
-      
-      }, []);
-      
-	console.log("person in receipt", person);
-	console.log("initial receiptData: ", receiptData);
+	function onSumChange() {
+		const result = deleteRub(rubles(getValues("sum")));
+		setValue("sumLetters", result);
+	}
 
-	const [initialReceiptData, setInitialReceiptData] = useState(structuredClone(receiptData))
+	async function saveReceipt(data) {
+		let resultMsg;
+		if (!location.pathname.startsWith("/docs/id")) {
+			// case 'new receipt'
+			delete data._id;
+			const freeNumbers = await getPKONumbers();
+			// check PKOnumber bf create
+			if (
+				!freeNumbers.includes(parseInt(data.number)) &&
+				!(data.number > freeNumbers[0])
+			) {
+				alert(
+					`Кажется №${data.number} занят.\nПопробуйте еще раз с другим номером.\n(Обновлен автоматически)`
+				);
+				nums = await getPKONumbers();
+				setValue("number", nums[0]);
+				return;
+			}
+			resultMsg = `ПКО №${data.number} для ${person.lastName} ${person.firstName[0]} ${person.middleName[0]}\nна ${data.sum}руб. создан`;
+		} else {
+			// case 'update existing'
+			resultMsg = `ПКО №${data.number} для ${person.lastName} ${person.firstName[0]} ${person.middleName[0]}\nна ${data.sum}руб. обновлен`;
+		}
+		await axios
+			.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/write`, data)
+			.then((result) => {
+				dispatch(addDocActionCreator(result.data));
+				navigate(`/docs/id${result.data._id}`);
+				alert(resultMsg);
+				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
+			});
+	}
+
+	async function resetHandler(e) {
+		e.preventDefault();
+		if (isExisting) {
+			fetchData();
+		} else {
+			reset(initialReceipt);
+			const numsAgain = await getPKONumbers();
+			setValue("number", numsAgain[0]);
+		}
+	}
+
+	async function deleteReceipt(e) {
+		e.preventDefault();
+		if (!isExisting) {
+			return;
+		}
+		const reallyDelete = confirm(
+			`Действительно удалить ПКО №${doc.number} из БД?`
+		);
+		if (reallyDelete) {
+			await axios
+				.post(
+					`${SERVER_IP}:${SERVER_PORT}/api/docs/delete/id${doc._id}`
+				)
+				.then((data) => {
+					alert(`Документ удален из БД\n(_id${data._id})`);
+					// this.props.history.push(`/persons/create`); // TODO
+					dispatch(removeDocActionCreator());
+				});
+			navigate(`/docs`);
+		}
+	}
 
 	const componentRef = useRef();
+
+	const handlePrint = useReactToPrint({
+		content: () => componentRef.current,
+	});
 
 	function handlePrintWrapper(e) {
 		e.preventDefault();
 		handlePrint();
 	}
 
-	const handlePrint = useReactToPrint({
-		content: () => componentRef.current,
-	});
-
-	function onReceiptDataChange(e) {
-        const idArray = e.target.id.split("-");
-        const id = idArray[0];
-        const idSecond = idArray[1];
-      
-		console.log('isEqual', isEqual(receiptData, initialReceiptData));
-		console.log('receiptData', receiptData);
-		console.log('initialReceiptData', initialReceiptData);
-
-        if (idArray.length === 1) {
-          setReceiptData({
-            ...receiptData,
-            [e.target.id]: isNaN(e.target.value) ? e.target.value : parseInt(e.target.value, 10)
-          });
-        } else {
-          const receiptDataClone = structuredClone(receiptData);
-          receiptDataClone[id][idSecond] = e.target.value;
-          setReceiptData(receiptDataClone);
-        }
-      }
-
-	function deleteRub(str) {
-		const one = str.replace(" рубль 00 копеек", "");
-		const two = one.replace(" рубля 00 копеек", "");
-		const three = two.replace(" рублей 00 копеек", "");
-		return three;
+	function onSubmit(data) {
+		console.log("data to submit", data);
+		saveReceipt(data);
 	}
-
-	function onSumChange(e) {
-        setReceiptData({
-            ...receiptData,
-            [e.target.id]: isNaN(e.target.value) ? e.target.value : parseInt(e.target.value, 10),
-            sumLetters: deleteRub(rubles(e.target.value)),
-          })
-	}
-
-	function createReceipt(e) {
-		e.preventDefault();
-		axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/write`, receiptData)
-			.then((receipt) => {
-				alert(`ПКО ${receipt.data._id} создан`);
-				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-			});
-	}
-
-	function saveReceipt() {
-		// save changes to existing receipt
-		e.preventDefault();
-		axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/docs/`, receiptData)
-			.then((doc) => {
-				// correct the path !!!
-				alert(`Документ ${doc._id} обновлен в БД`);
-				//   this.props.history.push(`/person/${this.props.match.params.id}`);
-			});
-		// TODO doesn't  create new case to existing
-	}
-
-	function revertReceipt() {}
-
-	function deleteReceipt() {}
-
-	function generatePDF() {}
-
-	/* function savePerson(e) {
-        e.preventDefault();
-        correction(e)
-        const data = {
-            id: person._id,
-            ...person
-        }
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/`, data).then(person => {
-          alert("Person Successfully Updated!");
-        //   this.props.history.push(`/person/${this.props.match.params.id}`);
-        });
-    } */
 
 	return (
 		<div className="component">
 			<div id="pdf"></div>
-			<form>
-				<fieldset>
-					<legend className="bg-light">ФИО</legend>
-					<div className="row">
-						{/* Фамилии */}
-						<div className="col-md-4 mb-3">
-							<label htmlFor="lastName">Фамилия</label>
-							<input
-								type="text"
-								className="form-control"
-								id="lastName"
-								placeholder="Иванов"
-								value={person.lastName}
-								readOnly
-							/>
-							<div className="invalid-feedback">
-								Valid last NameGenitive is required.
-							</div>
-						</div>
-						{/* Имени */}
-						<div className="col-md-3 mb-3">
-							<label htmlFor="firstNameGenitive">Имя</label>
-							<input
-								type="text"
-								className="form-control"
-								id="firstName"
-								placeholder="Иван"
-								value={person.firstName}
-								readOnly
-							/>
-							<div className="invalid-feedback">
-								Valid first NameGenitive is required.
-							</div>
-						</div>
-						{/* Отчества */}
-						<div className="col-md-4 mb-3">
-							<label htmlFor="middleNameGenitive">Отчество</label>
-							<input
-								type="text"
-								className="form-control"
-								id="middleName"
-								placeholder="Иванович"
-								value={person.middleName}
-							/>
-							<div className="invalid-feedback">
-								Valid middle NameGenitive is required.
-							</div>
-						</div>
-					</div>
-				</fieldset>
+			<form onSubmit={handleSubmit(onSubmit)}>
 				<fieldset>
 					<legend className="bg-light">
 						ФИО в падеже (автоматически. измените если неправильно)
@@ -244,13 +217,15 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-lastNameGenitive"
 								placeholder="Иванов"
-								value={receiptData.docProps.lastNameGenitive}
-								onChange={onReceiptDataChange}
-								required
+								{...register("docProps.lastNameGenitive", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid last NameGenitive is required.
-							</div>
+							{errors.docProps?.lastNameGenitive && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Имени */}
 						<div className="col-md-3 mb-3">
@@ -260,13 +235,15 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-firstNameGenitive"
 								placeholder="Иван"
-								value={receiptData.docProps.firstNameGenitive}
-								onChange={onReceiptDataChange}
-								required
+								{...register("docProps.firstNameGenitive", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid first NameGenitive is required.
-							</div>
+							{errors.docProps?.firstNameGenitive && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Отчества */}
 						<div className="col-md-4 mb-3">
@@ -276,12 +253,8 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-middleNameGenitive"
 								placeholder="Иванович"
-								value={receiptData.docProps.middleNameGenitive}
-								onChange={onReceiptDataChange}
+								{...register("docProps.middleNameGenitive")}
 							/>
-							<div className="invalid-feedback">
-								Valid middle NameGenitive is required.
-							</div>
 						</div>
 					</div>
 				</fieldset>
@@ -290,27 +263,22 @@ function TempReceiptForm() {
 						Номер ПКО, дата, сумма, основание
 					</legend>
 					<div className="row">
-						{/* Номер ПКО */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="PKONumber">Номер ПКО</label>
-							<select
-								className="form-select"
-								value={receiptData.number}
-								onChange={onReceiptDataChange}
-                                id="number"
-                                type="number"
-								required
-							>
-								{PKONumbers.map((number) => (
-									<option key={number} value={number}>
-										{number}
-									</option>
+							<input
+								className="form-control"
+								id="number"
+								type="number"
+								list="freePKONumbersList"
+								{...register("number", { value: nums[0] })}
+							/>
+							<datalist id="freePKONumbersList">
+								{nums.map((item) => (
+									<option key={item} value={item} />
 								))}
-							</select>
-							<div className="invalid-feedback">
-								Valid PKO number is required.
-							</div>
+							</datalist>
 						</div>
+
 						{/* Дата */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="PKODate">Дата ПКО</label>
@@ -319,13 +287,13 @@ function TempReceiptForm() {
 								className="form-control"
 								id="date"
 								placeholder="01.01.1970"
-								value={receiptData.date}
-								onChange={onReceiptDataChange}
-								required
+								{...register("date", { required: true })}
 							/>
-							<div className="invalid-feedback">
-								Valid PKO date is required.
-							</div>
+							{errors.lastName && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Сумма */}
 						<div className="col-md-2 mb-3">
@@ -336,13 +304,17 @@ function TempReceiptForm() {
 								id="sum"
 								min="1"
 								placeholder="1"
-								value={receiptData.sum}
-								onChange={onSumChange}
-								required
+								{...register(
+									"sum",
+									{ onChange: (e) => onSumChange(e) },
+									{ required: true }
+								)}
 							/>
-							<div className="invalid-feedback">
-								Valid sum is required.
-							</div>
+							{errors.sum && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Сумма прописью */}
 						<div className="col-md-6 mb-3">
@@ -354,12 +326,14 @@ function TempReceiptForm() {
 								className="form-control"
 								id="sumLetters"
 								placeholder="один рубль 00 копеек"
-								value={receiptData.sumLetters}
 								readOnly
+								{...register("sumLetters", { required: true })}
 							/>
-							<div className="invalid-feedback">
-								Valid sum is required.
-							</div>
+							{errors.sumLetters && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Основание */}
 						<div className="col-md-8 mb-3">
@@ -369,27 +343,28 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-reason"
 								placeholder="оплата составления искового заявления и представительства интересов в суде"
-								value={receiptData.docProps.reason}
-								onChange={onReceiptDataChange}
+								{...register("docProps.reason", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid organization is required.
-							</div>
+							{errors.docProps?.reason && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Приложение */}
 						<div className="col-md-4 mb-3">
-							<label htmlFor="attachment">Приложение</label>
+							<label htmlFor="docProps.attachment">
+								Приложение
+							</label>
 							<input
 								type="text"
 								className="form-control"
 								id="docProps-attachment"
 								placeholder="договор от "
-								value={receiptData.docProps.attachment}
-								onChange={onReceiptDataChange}
+								{...register("docProps.attachment")}
 							/>
-							<div className="invalid-feedback">
-								Valid organization is required.
-							</div>
 						</div>
 					</div>
 					<div className="row">
@@ -400,14 +375,16 @@ function TempReceiptForm() {
 								type="text"
 								className="form-control"
 								id="docProps-organization"
-								placeholder='ООО \"Юридический центр\"'
-								value={receiptData.docProps.organization}
-								onChange={onReceiptDataChange}
-								required
+								placeholder='ООО "Юридический центр"'
+								{...register("docProps.organization", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid organization is required.
-							</div>
+							{errors.docProps?.organization && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Главный бухгалтер */}
 						<div className="col-md-4 mb-1">
@@ -419,13 +396,15 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-mainAccountant"
 								placeholder="Д.А. Пахмутов"
-								value={receiptData.docProps.mainAccountant}
-								onChange={onReceiptDataChange}
-								required
+								{...register("docProps.mainAccountant", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid main accountant is required.
-							</div>
+							{errors.docProps?.mainAccountant && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 						{/* Кассир */}
 						<div className="col-md-4 mb-3">
@@ -435,65 +414,61 @@ function TempReceiptForm() {
 								className="form-control"
 								id="docProps-cashier"
 								placeholder="Д.А. Пахмутов"
-								value={receiptData.docProps.cashier}
-								onChange={onReceiptDataChange}
+								{...register("docProps.cashier", {
+									required: true,
+								})}
 							/>
-							<div className="invalid-feedback">
-								Valid cashier is required.
-							</div>
+							{errors.docProps?.cashier && (
+								<span className="required-field">
+									Обязательное поле
+								</span>
+							)}
 						</div>
 					</div>
 				</fieldset>
 				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					type="submit"
-					onClick={createReceipt}
+				<div className="footer-buttons">
+					{/*  */}
+					<button
+						className="btn btn-success btn-md btn-block"
+						type="submit"
+						// disabled={!isDirty || !isValid}
 					>
-					Создать новый
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={saveReceipt}
-					disabled={isEqual(receiptData, initialReceiptData)}
+						OK
+					</button>
+					<button
+						className="btn btn-warning btn-md btn-block"
+						onClick={(e) => resetHandler(e)}
 					>
-					Сохранить изменения в БД
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={revertReceipt}
-					disabled={isEqual(receiptData, initialReceiptData)}
-				>
-					Вернуть исходный
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-danger btn-md btn-block"
-					onClick={deleteReceipt}
-				>
-					Удалить
-				</button>
-				&nbsp;
-				{/*  */}
-				<button
-					className="btn btn-primary btn-md btn-block"
-					onClick={handlePrintWrapper}
-				>
-					Печать
-				</button>
-				&nbsp;
+						Вернуть исходный
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-danger btn-md btn-block"
+						onClick={deleteReceipt}
+					>
+						Удалить
+					</button>
+					{/*  */}
+					<button
+						className="btn btn-primary btn-md btn-block"
+						onClick={handlePrintWrapper}
+					>
+						Печать
+					</button>
+				</div>
 				{/*  */}
 				{/* <button className="btn btn-danger btn-md btn-block" onClick={generatePDF} >Удалить</button>
                 &nbsp; */}
 				{/*  */}
 			</form>
 			<div style={{ display: "none" }}>
-				<TempReceiptDoc receiptData={receiptData} ref={componentRef} />
+				{(Object.keys(currentValues).length) ? (
+					<TempReceiptDoc
+						receiptData={currentValues}
+						ref={componentRef}
+					/>
+				) : null}
 			</div>
 		</div>
 	);

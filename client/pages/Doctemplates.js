@@ -39,16 +39,19 @@ function Doctemplates() {
 				<div>
 					<ul className="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
 						<li>
-							<Link to="/docs/receipt">ПКО</Link>
+							<Link to="/docs/receipt">ПКО</Link> • 
 						</li>
 						<li>
-							<Link to="/docs/anydoc">AnyDoc</Link>
+							<Link to="/docs/anydoc">AnyDoc</Link> • 
 						</li>
 						<li>
-							<Link to="/docs/anydoc2">AnyDoc2</Link>
+							<Link to="/docs/anydoc2">AnyDoc2</Link> • 
 						</li>
-						{templateList.map((template) => (
-							<li key={template.id}>
+						<li>
+							<Link to="/docs/templateagreement">Договор</Link> • 
+						</li>
+						{templateList.map((template, index) => (
+							<li key={index}>
 								<Link
 									to="/docs/anydoc2"
 									onClick={() =>
@@ -56,7 +59,7 @@ function Doctemplates() {
 									}
 								>
 									{template.title}
-								</Link>
+								</Link> • 
 							</li>
 						))}
 					</ul>

@@ -2,7 +2,8 @@ import React, { useState, useEffect, forwardRef } from 'react'
 import './TempReceiptForm.css'
 
 function Page({receiptData}) {
-    return(       
+
+    return( 
         <div className="table-receipt">
                 <table className="fixed">
                     <col width="5.9%"></col>
@@ -214,7 +215,7 @@ function Page({receiptData}) {
                     <td colSpan="3" className="sign">расшифровка подписи</td>
                 </tr>
             </table>    
-        </div>
+        </div>     
     )
 }
 

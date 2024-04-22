@@ -2,6 +2,7 @@ import { applyMiddleware, combineReducers, configureStore } from "@reduxjs/toolk
 import { personReducer } from "./personReducer";
 import { templateReducer } from './templateReducer';
 import { caseReducer } from './caseReducer';
+import { docReducer } from './docReducer'
 import { composeWithDevTools } from "redux-devtools-extension";
 import thunk from "redux-thunk";
 
@@ -13,7 +14,7 @@ const localStorageSaver = store => next => action => {
   return result;
 };
 
-const rootReducer = combineReducers({ personReducer, templateReducer, caseReducer });
+const rootReducer = combineReducers({ personReducer, templateReducer, caseReducer, docReducer });
 
 // Function to initialize state from session storage if it's empty
 const initializeStateFromStorage = () => {
