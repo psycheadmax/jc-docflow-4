@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";

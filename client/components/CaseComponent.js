@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import axios from "axios";
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
 import {
