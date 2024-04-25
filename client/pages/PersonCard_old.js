@@ -12,7 +12,8 @@ import axios from "axios";
 import { CheckBeforeCreate } from "../components/CheckBeforeCreate";
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
