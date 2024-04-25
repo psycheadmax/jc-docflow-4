@@ -4,7 +4,8 @@ import axios from "axios";
 import debounce from 'lodash/debounce';
 import { useDispatch } from 'react-redux';
 import { removeActionCreator } from '../store/personReducer';
-require('dotenv').config()
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 
 const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']

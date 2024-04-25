@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from "react-router-dom";
 import axios from 'axios'
 import dayjs from 'dayjs';
-require('dotenv').config()
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 
 const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
