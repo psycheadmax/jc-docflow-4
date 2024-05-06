@@ -9,13 +9,13 @@ import { removeDocActionCreator } from '../store/docReducer';
 import axios from "axios";
 import dayjs from 'dayjs';
 
+import { MdClear } from "react-icons/md";
+
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 function Header() {
 	const dispatch = useDispatch()
-	const state = useSelector(state => state);
-	console.log('Header state: ', state)
 	const location = useLocation()
 	const navigate = useNavigate()
 
@@ -110,8 +110,9 @@ function Header() {
 				{(person._id || caseName._id || template._id || doc._id) && (<button
 					className="btn btn-outline-danger btn-sm btn-block"
 					onClick={clearState}
+					title="Очистить"
 					>
-					&#9747;
+					<MdClear />
 				</button>)}
 					<Link
 						to={{
@@ -142,7 +143,7 @@ function Header() {
 					{template._id && ` | `}
 					<Link
 						to={{
-							pathname: `/docs/anydoc2`,
+							pathname: `/docs/` + (template.templateURLName ? template.templateURLName : `anydoc2`)
 						}}
 					>
 						{template.title && `${template.title}`}

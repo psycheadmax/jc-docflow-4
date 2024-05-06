@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
+import InputMask from 'react-input-mask'
 import {
 	captureActionCreator,
 	removeActionCreator,
@@ -59,6 +60,8 @@ function PersonCard() {
 			const data = await getDataByIdFromURL("persons") || emptyPerson; // TODO calling now even if there no id (create instead)
 			console.log("useEffect data: ", data);
 			personCaseTrigger(data);
+			data.birthDate = dayjs(data.birthDate).format("YYYY-MM-DD");
+			data.passportDate = dayjs(data.passportDate).format("YYYY-MM-DD");
 			reset(data)
 		}
 		getData();
@@ -78,6 +81,8 @@ function PersonCard() {
 		watch,
 		control,
 		reset,
+		getValues,
+		setValue,
 		formState: { errors, isDirty, isValid },
 	} = useForm({
 		defaultValues: personRedux,
@@ -100,7 +105,6 @@ function PersonCard() {
 		middleName: watch('middleName'),
 	};
 
-
 	function personCaseTrigger(data) {
 		console.log(data._id !== personRedux._id);
 		if (data._id !== personRedux._id) {
@@ -108,6 +112,15 @@ function PersonCard() {
 			dispatch(removeCaseActionCreator());
 		} else {
 			dispatch(captureActionCreator(data));
+		}
+	}
+
+	function guessGender() {
+		console.log(getValues('middleName'))
+		if (getValues('middleName').slice(-1) === 'а') {
+			setValue('gender', 'жен')
+		} else {
+			setValue('gender', 'муж')
 		}
 	}
 
@@ -169,14 +182,15 @@ function PersonCard() {
 		if (reallyDelete) {
 			axios
 				.post(
-					`${SERVER_IP}:${SERVER_PORT}/api/persons/delete/id${person._id}`
+					`${SERVER_IP}:${SERVER_PORT}/api/persons/delete/id${personRedux._id}`
 				)
 				.then((data) => {
-					alert(`${data.lastName} удален из БД`);
+					alert(`Клиент удален из БД`);
 					// this.props.history.push(`/persons/create`); // TODO
 					dispatch(removeActionCreator());
 				});
 			navigate(`/person`);
+			reset(emptyPerson)
 		}
 	}
 
@@ -203,6 +217,7 @@ function PersonCard() {
 
 	function receivePerson(person) {
 		personCaseTrigger(person);
+		reset(person)
 	}
 
 	return (
@@ -253,7 +268,9 @@ function PersonCard() {
 								className="form-control"
 								id="middleName"
 								placeholder="Иванович"
-								{...register("middleName")}
+								{...register("middleName", {
+									onChange: () => guessGender(),
+								})}
 							/>
 						</div>
 						{/* Пол */}
@@ -284,22 +301,22 @@ function PersonCard() {
 						{/* Серия паспорта*/}
 						<div className="col-md-1 mb-3">
 							<label htmlFor="passport-serie">Серия</label>
-							<input
-								type="number"
+							<InputMask
 								className="form-control"
 								id="passportSerie"
 								placeholder="8700"
-								{...register("passportSerie")}
+								mask="9999"
+								{...register("passportSerie", { maxLength: {value: 4, message: "Максимум 4 цифры" }})}
 							/>
 						</div>
 						{/* Номер паспорта */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="passport-number">Номер</label>
-							<input
-								type="number"
+							<InputMask
 								className="form-control"
 								id="passportNumber"
 								placeholder="123456"
+								mask="999999"
 								{...register("passportNumber")}
 							/>
 						</div>
@@ -354,11 +371,12 @@ function PersonCard() {
 							<label htmlFor="passport-code">
 								Код подразделения
 							</label>
-							<input
+							<InputMask
 								type="text"
 								className="form-control"
 								id="passportCode"
 								placeholder="110-003"
+								mask="999-999"
 								{...register("passportCode")}
 							/>
 						</div>
@@ -371,22 +389,23 @@ function PersonCard() {
 						{/* ИНН Номер */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="innNumber">ИНН</label>
-							<input
-								type="number"
+							<InputMask
 								className="form-control"
 								id="innNumber"
 								placeholder="110300400500"
+								mask="999999999999"
 								{...register("innNumber")}
 							/>
 						</div>
 						{/* СНИЛС Номер */}
 						<div className="col-md-2 mb-3">
 							<label htmlFor="snilsNumber">СНИЛС</label>
-							<input
+							<InputMask
 								type="text"
 								className="form-control"
 								id="snilsNumber"
 								placeholder="111-222-333 44"
+								mask="999-999-999 99"
 								{...register("snilsNumber")}
 							/>
 						</div>
@@ -427,16 +446,16 @@ function PersonCard() {
 										Индекс
 									</label>
 									{/* index */}
-									<input
-										type="number"
+									<InputMask
 										id="address-index"
 										className="form-control"
+										mask="999999"
 										{...register(`address.${index}.index`, {
 											onChange: (e) => {
 												onChange(e, index);
 											},
 										})}
-										placeholder="Индекс"
+										placeholder="169900"
 									/>
 								</div>
 								{/* Субъект */}
@@ -470,7 +489,7 @@ function PersonCard() {
 												onChange(e, index);
 											},
 										})}
-										placeholder="Город"
+										placeholder="г. Воркута"
 									/>
 								</div>
 								{/* Населенный пункт */}
@@ -491,7 +510,7 @@ function PersonCard() {
 												},
 											}
 										)}
-										placeholder="Населенный пункт"
+										placeholder="пос. Цементнозаводский"
 									/>
 								</div>
 								{/* Улица */}
@@ -512,7 +531,7 @@ function PersonCard() {
 												},
 											}
 										)}
-										placeholder="Улица"
+										placeholder="ул. Ватутина"
 									/>
 								</div>
 								{/* Дом */}
@@ -533,7 +552,7 @@ function PersonCard() {
 												},
 											}
 										)}
-										placeholder="Здание"
+										placeholder="д. 3"
 									/>
 								</div>
 								{/* Квартира */}
@@ -554,7 +573,7 @@ function PersonCard() {
 												},
 											}
 										)}
-										placeholder="Квартира"
+										placeholder="кв. 37"
 									/>
 								</div>
 								<div className="col-md-1 mb-3">
@@ -571,6 +590,7 @@ function PersonCard() {
 						);
 					})}
 					<button
+						type="button"
 						className="btn btn-light btn-md btn-block"
 						id="address"
 						onClick={() =>
@@ -588,8 +608,9 @@ function PersonCard() {
 							<div className="row" key={field.id}>
 								{/* Телефон*/}
 								<div className="col-md-2 mb-3">
-									<input
-										type="tel"
+									<InputMask
+										mask="9 (999) 999-99-99"
+										// type="tel"
 										id="phone-number"
 										className="form-control"
 										{...register(`phone.${index}.number`, {
@@ -614,7 +635,7 @@ function PersonCard() {
 												},
 											}
 										)}
-										placeholder="Номер"
+										placeholder="Тип"
 									/>
 									<datalist id="phoneList">
 										<option value="основной" />
@@ -636,6 +657,7 @@ function PersonCard() {
 						);
 					})}
 					<button
+						type="button"
 						className="btn btn-light btn-md btn-block"
 						id="phone"
 						onClick={() =>
@@ -658,13 +680,13 @@ function PersonCard() {
 									(необязательно)
 								</span> */}
 							</label>
-							<input
-								type="email"
+							<InputMask
+								type="text"
 								className="form-control"
 								id="email"
 								placeholder="you@example.com"
 								{...register('email')}
-							/>
+							/ >
 						</div>
 
 						{/* Комментарий */}
@@ -704,10 +726,14 @@ function PersonCard() {
 					{personRedux._id && (
 						<button
 							className="btn btn-warning btn-md btn-block"
-							onClick={() => reset(emptyPerson)}
-							disabled={!isValid}
+							onClick={() => {
+								personRedux._id ?
+								reset(personRedux) :
+								reset(emptyPerson)
+							}}
+							disabled={!isDirty}
 						>
-							Вернуть исходные
+							Отменить изменения
 						</button>
 					)}
 					{/*  */}

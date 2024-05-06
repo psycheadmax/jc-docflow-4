@@ -139,22 +139,8 @@ function DocsListFilter({ person }) {
 		<div className="component">
 			Фильтр
 			<div className="row">
-				{/* Фамилия */}
-				<div className="col-md-3 mb-3">
-					<label htmlFor="disabledTextInput">
-						Фамилия (только чтение)
-					</label>
-					<input
-						type="text"
-						className="form-control"
-						id="disabledTextInput"
-						placeholder="Иванов"
-						value={`${person.lastName} ${person.firstName} ${person.middleName}`}
-						readOnly
-					/>
-				</div>
 				{/* Дело */}
-				<div className="col-md-4 mb-3">
+				<div className="col-md-6 mb-3">
 					<label htmlFor="idCase">Дело</label>
 					<select
 						className="form-select form-select-md mb-3"
@@ -177,7 +163,7 @@ function DocsListFilter({ person }) {
 				</div>
 
 				{/* Тип документа */}
-				<div className="col-md-2 mb-3">
+				<div className="col-md-4 mb-3">
 					<label htmlFor="type">Тип документа</label>
 					<select
 						id="type"
@@ -208,13 +194,17 @@ function DocsListFilter({ person }) {
 					<li className="list-group-item" key={index} id={item._id}>
 						{/* <Link to={{ pathname: `/docs/id${item._id}` }} onClick={() => loadState(item._id)}> */}
 						<Link onClick={(e) => loadState(e, item._id)}>
-							{`${item.name}  • 
-							${item.type}  • 
-							${item.description} • 
-							${dayjs(item.date).format("DD.MM.YYYY")} • 
-							клиент:${item.idPerson} • 
-							дело:${item.idCase} • 
-							${item.sum}руб.`}
+							{
+								(item.name ? `имя: ${item.name} • ` : ``)+
+								(item.type ? `тип: ${item.type} • ` : ``)+
+								(item.type === "ПКО" ? `№: ${item.number} • ` : ``)+
+								(item.date ? `от ${dayjs(item.date).format("DD.MM.YYYY")} • ` : ``)+
+								(item.sum ? `на: ${item.sum}руб.• ` : ``)+
+								(item.description ? `описание: ${item.description} • ` : ``)+
+								(!person._id ? `клиент: ${item.idPerson.lastName} ${item.idPerson.firstName[0]}. ${item.idPerson.middleName[0]}. • ` : ``)+
+								(item.idCase ? `дело: ${item.idCase.caseTitle} от ${dayjs(item.idCase.caseDate).format('DD.MM.YYYY')}` : ``)
+							}
+							{/* NAME • TYPE • DESCRIPTION • DATE • PERSON • CASE • SUM */}
 						</Link>
 					</li>
 				))}

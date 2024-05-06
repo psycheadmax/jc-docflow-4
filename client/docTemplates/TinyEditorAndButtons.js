@@ -11,6 +11,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Modal from '../components/Modal';
 
+import { BiSave,  } from "react-icons/bi"
+import { FaEdit, FaRegFileWord } from "react-icons/fa";
+import { RiDeleteBin2Line } from 'react-icons/ri'
+import { TbTerminal2 } from "react-icons/tb";
+import { CiRead } from "react-icons/ci";
+
 import htmlDocx from "html-docx-js";
 import { saveAs } from "file-saver";
 
@@ -28,7 +34,7 @@ const SERVER_IP = process.env["SERVER_IP"];
 const TINYMCEPATH =
 	"https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js";
 
-function TinyEditorAndButtons({ tokens, onModify }) {
+function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templateURLName=null}) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const person = useSelector((state) => state.personReducer.person);
@@ -40,12 +46,12 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 
 	const [contentBack, setContentBack] = useState();
 	const [dirty, setDirty] = useState(false);
-	const [previewType, setPreviewType] = useState("tokens"); // 'tokens' or 'result'
-	const [destinationDocName, setDestinationDocName] = useState(
-		doc.name ||
-		`${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - ${templateData.type}`
-	);
+	const [preview, setPreview] = useState(false);
+	const [destinationDocName, setDestinationDocName] = useState(docName);
 	const [modalActive, setModalActive] = useState(false)
+	const [key, setKey] = useState(0);
+
+	console.log('documentMode:', documentMode)
 
 	function onChange(e) {
 		e.persist();
@@ -70,11 +76,11 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 		}
 	};
 
-	const showResult = (e) => {
-		e.preventDefault();
-		if (previewType === "tokens") {
+	const showResult = () => {
+		// e.preventDefault();
+		if (preview === false) {
 			tinymce.activeEditor.mode.set("readonly");
-			setPreviewType("result");
+			setPreview(true);
 			setContentBack(editorRef.current.getContent());
 			setTemplateData({
 				...templateData,
@@ -85,7 +91,7 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 				),
 			});
 		} else {
-			setPreviewType("tokens");
+			setPreview(false);
 			setTemplateData({
 				...templateData,
 				content: contentBack,
@@ -115,8 +121,12 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 		if (confirm(message)) {
 			const data = {
 				...templateData,
+				templateURLName: templateURLName,
 				content: editorRef.current.getContent(),
 			};
+			dispatch(removeTemplateActionCreator());
+			setTemplateData(data)
+			dispatch(addTemplateActionCreator(data));
 			try {
 				await axios
 					.post(
@@ -124,11 +134,8 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 						data
 					)
 					.then((item) => {
-						dispatch(removeTemplateActionCreator());
 						console.log(data._id)
 						console.log(item.data._id)
-						setTemplateData({...item.data})
-						dispatch(addTemplateActionCreator(item.data));
 						alert(`Шаблон ${item.data.title} сохранен`);
 						setModalActive(false)
 						// const dataFromURL = getDataByIdFromURL('doctemplates')
@@ -138,10 +145,11 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 			} catch (error) {
 				console.log(error);
 			}
+			// setKey(prevKey => prevKey + 1); //remount Editor
 		}
 
 		// TODO refresh page //MB this is unnecessary
-		window.location.reload();
+		// window.location.reload();
 	};
 
 	const deleteDocTemp = async () => {
@@ -170,7 +178,7 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 		}
 	};
 
-	const callSave = (e) => {
+	const generateWord = (e) => {
 		e.preventDefault();
 		// showResult()
 		let stringHTMLFinal = `
@@ -268,132 +276,146 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 
 	return (
 		<>
-			{/* DOCUMENT buttons */}
-			<div className="row">
-				<div className="col-md-6 mb-3">
-					{/* <label htmlFor='title'>
-										Имя шаблона
-									</label> */}
-					<input
-						type="text"
-						className="form-control"
-						id="destinationDocName"
-						placeholder="Имя документа"
-						value={destinationDocName}
-						onChange={(e) => onChange(e)}
-					/>
-				</div>
-				<div className="col-md-4 mb-3">
-					{/* КНОПКИ */}
-					<div className="page-buttons">
+			{/* DOCUMENT BUTTONS START */}
+				<div className="row" >
+					{
+						(!documentMode) &&
+						(<>
+							<div className="col-md-5 mb-3">
+							<input
+								type="text"
+								className="form-control"
+								id="destinationDocName"
+								placeholder="Имя документа"
+								value={destinationDocName}
+								onChange={(e) => onChange(e)}
+								/>
+							</div>
+							<div className="col-md-2 mb-3">
+									{/* КНОПКИ */}
+									<div className="page-buttons">
+										{/*  */}
+										{templateData.content && (
+											<button
+												className="btn btn-primary btn-md btn-block btn-md"
+												onClick={saveDoc}
+												title="Сохранить документ"
+											>
+												<BiSave /> Сохранить
+											</button>
+										)}
+										{/*  */}
+										{doc._id && (
+											<button
+												className="btn btn-danger btn-md btn-block btn-md"
+												onClick={deleteDoc}
+												disabled={doc._id}
+												title="Удалить документ"
+											>
+												<RiDeleteBin2Line />
+											</button>
+										)}
+									</div>
+								</div>
+								</>
+							)
+						}				
 						{/*  */}
-						{templateData.content && (
-							<button
-								className="btn btn-primary btn-md btn-block btn-sm"
-								onClick={saveDoc}
-							>
-								Сохранить документ
-							</button>
-						)}
-						{/*  */}
-						{doc._id && (
-							<button
-								className="btn btn-danger btn-md btn-block btn-sm"
-								onClick={deleteDoc}
-								disabled={doc._id}
-							>
-								Удалить документ
-							</button>
-						)}
-					</div>
-				</div>
-				<div className="col-md-2 mb-3">
-					<button className="btn btn-outline-primary btn-md btn-block btn-sm" onClick={() => setModalActive(true)}>Управление шаблоном</button>
-				</div>
-			</div>
-			{/* DOCUMENT END */}
-			{/* TEMPLATE buttons */}
-			<Modal active={modalActive} setActive={setModalActive}>
-				<div className="row">
-					<div className="col-md-12 mb-3">
-						<label htmlFor='title'>
-											Имя
-										</label>
-						<input
-							type="text"
-							className="form-control"
-							id="title"
-							placeholder="Имя шаблона"
-							value={templateData.title}
-							onChange={(e) => onChange(e)}
-						/>
-					</div>
-				</div>
-				<div className="row">
-					<div className="col-md-6 mb-3">
-						<label htmlFor='title'>
-											Тип
-										</label>
-						<input
-							type="text"
-							className="form-control"
-							id="type"
-							placeholder="Тип шаблона"
-							value={templateData.type}
-							onChange={(e) => onChange(e)}
-						/>
-					</div>
-					<div className="col-md-6 mb-3">
-						<label htmlFor='scenario'>
-											Scenario
-										</label>
-						<input
-							type="text"
-							className="form-control"
-							id="type"
-							placeholder="пока не реализовано"
-							value={templateData.scenario}
-							onChange={(e) => onChange(e)}
-						/>
-					</div>
-					<div className="col-md-12 mb-3">
-						<label htmlFor='title'>Описание</label>
-						<textarea className="form-control" id="description" rows="3" value={templateData.description} placeholder='Описание'></textarea>
-					</div>
-				</div>
-				<div className="row">
-					<div className="footer-buttons">
-						<div className="col-md-6 mb-3">
-							{/* КНОПКИ */}
-							{/*  */}
-							{templateData.content && (
-								<button
-									className="btn btn-primary btn-md btn-block btn-sm"
-									onClick={saveDocTemp}
-								>
-									Сохранить шаблон
-								</button>
-							)}
-							{/*  */}
-							{templateData.content && (
-								<button
-									className="btn btn-danger btn-md btn-block btn-sm"
-									onClick={deleteDocTemp}
-								>
-									Удалить
-								</button>
-							)}
+						<div className="col-md-3 mb-3">
+							<div className="page-buttons">
+								{!documentMode && 
+								<>
+									<button className="btn btn-primary btn-md btn-block btn-md" onClick={log} title="Log editor content"><TbTerminal2 /></button>
+									<button className="btn btn-primary btn-md btn-block btn-md" onClick={showResult} title={preview ? 'Режим редактирования' : 'Режим просмотра'}>
+										{ preview === false ? <CiRead /> : <FaEdit /> }
+									</button>
+								</>
+								}
+								<button className="btn btn-primary btn-md btn-block btn-md" onClick={generateWord} disabled={preview==='result'} title="Сгенерировать документ Word"><FaRegFileWord /> в .docx</button>
+							</div>
 						</div>
+						{/*  */}
+						{!documentMode &&
+						<div className="col-md-2 mb-3">
+							<button className="btn btn-outline-primary btn-md btn-block btn-md" onClick={() => setModalActive(true)}>Управление шаблоном</button>
+						</div>}
 					</div>
-				</div>
-			</Modal>
+			{/* DOCUMENT BUTTONS END */}
+			
+			{/* TEMPLATE buttons */}
+			{!documentMode && 
+					<Modal active={modalActive} setActive={setModalActive}>
+						<div className="row">
+							<div className="col-md-12 mb-3" title='Имя шаблона, чтобы безошибочно отличать его из массы дргуих.'>
+								<label htmlFor='title'>
+													Имя
+												</label>
+								<input
+									type="text"
+									className="form-control"
+									id="title"
+									placeholder="Имя шаблона"
+									value={templateData.title}
+									onChange={(e) => onChange(e)}
+								/>
+							</div>
+						</div>
+						<div className="row">
+							<div className="col-md-6 mb-3" title='Тип шаблона. Один из предопределенных типов в системе.'>
+								<label htmlFor='title'>
+													Тип
+												</label>
+								<input
+									type="text"
+									className="form-control"
+									id="type"
+									placeholder="Тип шаблона"
+									value={templateData.type}
+									onChange={(e) => onChange(e)}
+								/>
+							</div>
+							<div className="col-md-12 mb-3" title='Любая дополнительная текстовая информация.'>
+								<label htmlFor='title'>Описание</label>
+								<textarea className="form-control" id="description" rows="3" value={templateData.description} placeholder='Описание'></textarea>
+							</div>
+						</div>
+						<div className="row">
+							<div className="footer-buttons">
+								<div className="col-md-6 mb-3">
+									{/* КНОПКИ */}
+									{/*  */}
+									{templateData.content && (
+										<button
+											className="btn btn-primary btn-md btn-block btn-sm"
+											onClick={saveDocTemp}
+										>
+											Сохранить шаблон
+										</button>
+									)}
+									{/*  */}
+									{templateData.content && (
+										<button
+											className="btn btn-danger btn-md btn-block btn-sm"
+											onClick={deleteDocTemp}
+										>
+											Удалить
+										</button>
+									)}
+								</div>
+							</div>
+						</div>
+					</Modal>
+			}
+			
 			{/* TEMPLATE END*/}
 			{/* TINYMCE EDITOR */}
 			<form>
 				<Editor
+					key={key} // remount
+					disabled={documentMode}
 					tinymceScriptSrc={TINYMCEPATH}
 					onInit={(evt, editor) => (editorRef.current = editor)}
-					initialValue={templateData.content}
+					initialValue={documentMode ? doc.templateResultString : templateData.content}
 					onDirty={() => setDirty(true)}
 					init={
 						// BASIC TINYMCE
@@ -414,15 +436,15 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 						// 		"body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
 						// }
 						// END OF BASIC TINYMCE
-						{
+						{	
 							selector: "textarea#open-source-plugins",
 							plugins:
 								"print preview paste importcss searchreplace autolink autosave save directionality code visualblocks visualchars fullscreen image link media template codesample table charmap hr pagebreak nonbreaking anchor toc insertdatetime advlist lists wordcount imagetools textpattern noneditable help charmap quickbars emoticons",
 							imagetools_cors_hosts: ["picsum.photos"],
 							menubar:
-								"file edit view insert format tools table help",
+								documentMode ? false : "file edit view insert format tools table help",
 							toolbar:
-								"undo redo | bold italic underline strikethrough | fontselect fontsizeselect formatselect | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist | forecolor backcolor removeformat | pagebreak | charmap emoticons | fullscreen  preview save print | insertfile image media template link anchor codesample | ltr rtl",
+								documentMode ? false : "undo redo | bold italic underline strikethrough | fontselect fontsizeselect formatselect | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist | forecolor backcolor removeformat | pagebreak | charmap emoticons | fullscreen  preview save print | insertfile image media template link anchor codesample | ltr rtl",
 							toolbar_sticky: true,
 							autosave_ask_before_unload: true,
 							autosave_interval: "30s",
@@ -521,11 +543,6 @@ function TinyEditorAndButtons({ tokens, onModify }) {
 						}
 					}
 				/>
-				<button className="btn btn-primary btn-md btn-block btn-sm" onClick={log}>Log editor content</button>
-				<button className="btn btn-primary btn-md btn-block btn-sm" onClick={showResult}>
-					{previewType === "tokens" ? "Show Result" : "Show Tokens"}
-				</button>
-				<button className="btn btn-primary btn-md btn-block btn-sm" onClick={callSave} disabled={previewType==='result'}>Сгенерировать .docx</button>
 			</form>
 			{/* TINYMCE EDITOR END*/}
 		</>

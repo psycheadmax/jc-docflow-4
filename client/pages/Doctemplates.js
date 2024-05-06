@@ -14,7 +14,6 @@ const SERVER_IP = process.env["SERVER_IP"];
 
 function Doctemplates() {
 	const [templateList, setTemplateList] = useState([]);
-
 	const dispatch = useDispatch();
 
 	useEffect(() => {
@@ -51,6 +50,7 @@ function Doctemplates() {
 						<li>
 							<Link to="/docs/templateagreement">Договор</Link> • 
 						</li>
+						{/* GET TEMPLATES FROM DB
 						{templateList.map((template, index) => (
 							<li key={index}>
 								<Link
@@ -62,7 +62,8 @@ function Doctemplates() {
 									{template.title}
 								</Link> • 
 							</li>
-						))}
+						))} 
+						*/}
 					</ul>
 				</div>
 			</header>

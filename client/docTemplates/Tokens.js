@@ -59,7 +59,7 @@ function Tokens({ tokens }) {
 										paddingRight: "2px",
 									}}
 								>
-									{element[0]} = {element[1]}
+									<span className="span-token" title={element[1]}>{element[0]}</span>
 								</div>
 							)
 					)}

@@ -59,19 +59,6 @@ function Cases() {
 		e.preventDefault();
 		dispatch(removeCaseActionCreator())
 		navigate(`/cases/new`);
-		/* axios
-			.post(`${SERVER_IP}:${SERVER_PORT}/api/cases/write`, data)
-			.then((item) => {
-				console.log("item: ");
-				console.log(item);
-				navigate(`/cases/id${item.data._id}`);
-
-				const dataFromURL = getDataByIdFromURL("cases");
-				// data._id = item.data._id;
-				// console.log(dataFromURL._id);
-				// dispatch(captureActionCreator(data));
-				// this.props.history.push(`/persons/${person.data._id}`); // TODO WHAT IS IT???
-			}); */
 	}
 
 	return (
@@ -89,12 +76,7 @@ function Cases() {
 				{cases.map((item, index) =>
 					index < 30 ? (
 						<li className="list-group-item" key={index}>
-							<Link
-								onClick={() => dispatch(addCaseActionCreator(item))}
-								to={{
-									pathname: `/cases/id${item._id}`,
-								}}
-							>
+							<Link to={{pathname: `/cases/id${item._id}`,}}>
 								{item.caseTitle} от {dayjs(item.caseDate).format('DD.MM.YYYY')}
 							</Link>
 						</li>

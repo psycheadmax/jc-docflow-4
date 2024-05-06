@@ -225,8 +225,8 @@ app.post("/api/persons/write", (req, res) => {
 // Delete selected person
 app.post("/api/persons/delete/:id", (req, res) => {
 	const id = req.params.id.replace("id", "");
-	Person.findByIdAndDelete(id).then((person) => {
-		res.json({ message: "Person was deleted!" });
+	Person.findByIdAndDelete(id).then(() => {
+		res.json({ message: "Person was deleted" });
 	});
 });
 // END OF PERSONS =======================================
@@ -343,7 +343,9 @@ app.post("/api/docs/search", (req, res) => {
 		...req.body,
 	};
 	AnyDoc.find(data)
-		.populate("cases")
+		.populate("idPerson")
+		.populate("idCase")
+		.populate("idTemplate")
 		.then((docs) => {
 			res.json(docs);
 		});
