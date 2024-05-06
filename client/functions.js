@@ -130,7 +130,7 @@ function fromTokensToResult(tokensArray, content, gender) {
 		content = content.replaceAll(item[0], item[1]);
 	});
 
-	console.log("gender:", gender);
+	// console.log("gender:", gender);
 	// gender dependent words replacing @был-была@
 	// const regex = /^@[а-яА-Яa-zA-Z]+-[а-яА-Яa-zA-Z]+@$/g
 	const regex = /@([аА-яЯ]+)-([аА-яЯ]+)@/g;
@@ -192,7 +192,7 @@ async function getCurrentYearNumbers(docType) {
 		);
 
 		const numArr = response.data.map((item) => {
-			return item.number;
+				return item.number
 		});
 
 		return numArr;
@@ -245,12 +245,14 @@ function paymentsSchedule(
 	payMultiplier = 1,
 	payPeriod = "month"
   ) {
+
 	if (!total || !initialSum || !intervalSum  || !payMultiplier || !payPeriod) {
 		return ['введены не все значения для расчет графика платежей']
 	}
-	if (total < initialSum || total < intervalSum) {
-		return ['сумма не может быть меньше первоначального или последущего платежей']
+	if ((total < initialSum) || (total < intervalSum)) {
+		return ['сумма не может быть меньше первого платежа или последующего платежа']
 	}
+	
 	let restSum = total - initialSum;
 	let paySums = [initialSum];
   
@@ -270,7 +272,7 @@ function paymentsSchedule(
 		return [
 			item,
 			dayjs()
-				.add(index + parseInt(payMultiplier), payPeriod)
+				.add((index + 1) * payMultiplier, payPeriod)
 				.format("DD.MM.YYYY")
 				.toString(),
 		];

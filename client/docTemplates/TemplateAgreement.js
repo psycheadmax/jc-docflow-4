@@ -23,6 +23,7 @@ const SERVER_IP = process.env["SERVER_IP"];
 
 function TemplateAgreement() {
 	// Шаблон Договора по банкротству
+	const templateURLName = 'templateagreement'
 	const rubles = require("rubles").rubles;
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
@@ -34,12 +35,14 @@ function TemplateAgreement() {
 		setTemplateState((prevState) => ({ ...prevState, ...data }));
 	}
 
+	const [unusedNumbersState, setUnusedNumbersState] = useState([]);
 	useEffect(() => {
 		async function getData() {
-			const data = await getCurrentYearNumbers("договор");
-			const unusedNumbers = getUnusedNumbers(data);
+			const data = await getCurrentYearNumbers("Договор");
+			const unusedNumbers = getUnusedNumbers(data).sort((a, b) => a - b);
+			setUnusedNumbersState(unusedNumbers)
+			console.log("getUnusedNumbers:", unusedNumbers);
 			setDocProps({ ...docProps, [number]: unusedNumbers[0] });
-			console.log("unusedNumbers:", unusedNumbers);
 			setValue("number", unusedNumbers[0]);
 		}
 
@@ -65,7 +68,7 @@ function TemplateAgreement() {
 		totalSum: 1000,
 		date: dayjs().format("YYYY-MM-DD"),
 		datePayment: dayjs().add(1, 'month').format("YYYY-MM-DD"),
-		number: "0001",
+		number: "1",
 		payVariant: "в начале",
 		initialSum: "",
 		intervalSum: "",
@@ -119,6 +122,8 @@ function TemplateAgreement() {
 		}
 		else if (values.payVariant === 'график платежей') {
 			const payArr = paymentsSchedule(values.totalSum, values.initialSum, values.intervalSum, values.payPeriodMultiplier, values.payPeriod)
+			console.log('payArr:', payArr)
+
 			if (!payArr) {
 				docPropsTokens.push(["%БЛОКОПЛАТЫ%", 'недостаточно данных для расчета'])
 				return docPropsTokens
@@ -133,9 +138,6 @@ function TemplateAgreement() {
 			payArrExt.push(`Заказчик вправе досрочно исполнить свои обязательства по оплате предоставляемых по настоящему договору услуг.`)
 			paymentBlock = payArrExt.join('<br/>')	
 		}
-		// LAST STOP template saving. check if it correct. - right after save its OK. after first page reload it shows some previous version after second reload its shows correct version NOT READY
-		// NEXT check the program
-		// NEXT deploy
 
 		else if (values.payVariant === 'после решения') {
 			const nextDate = dayjs().add(parseInt(values.payPeriodMultiplier), values.payPeriod)
@@ -262,14 +264,26 @@ function TemplateAgreement() {
 									type="text"
 									className="form-control"
 									id="number"
-									placeholder="0001"
+									placeholder="1"
+									list="freeNumbers"
 									{...register("number", {
 										// value: docProps.number,
 										onChange: () => handleChange(),
 										required: true,
 									})}
 								/>
+								{/* <span>
+									{unusedNumbersState.map((item) => {
+										return <span key={item}>{item}</span>
+									})}
+								</span> */}
+								<datalist id="freeNumbers">
+									{unusedNumbersState.map((item) => {
+										return <option key={item} value={item} />
+									})}
+								</datalist>
 							</div>
+
 						</div>
 						<div className="row">
 							{/* Вид оплаты */}
@@ -500,7 +514,8 @@ function TemplateAgreement() {
 
 			<TinyEditorAndButtons
 				tokens={tokens}
-				onModify={handleTemplateStateChange}
+				templateURLName={templateURLName}
+				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - Договор банкротство`}
 			/>
 		</>
 	);

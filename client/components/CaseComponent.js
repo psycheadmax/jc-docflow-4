@@ -7,6 +7,7 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 import { getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
+import { personReducer, captureActionCreator, removeActionCreator } from '../store/personReducer';
 import {
 	addCaseActionCreator,
 	removeCaseActionCreator,
@@ -26,7 +27,10 @@ function CaseComponent() {
 	async function getData(e) {
 		const data = (await getDataByIdFromURL("cases")) || emptyCase; // TODO calling now even if there no id (create instead)
 		console.log("useEffect data: ", data);
+		dispatch(removeActionCreator())
 		dispatch(removeCaseActionCreator())
+		dispatch(captureActionCreator(data.idPerson))
+		delete data.idPerson;
 		dispatch(addCaseActionCreator(data)) 
 		data.caseDate = dayjs(data.caseDate).format("YYYY-MM-DD");
 		reset(data);
