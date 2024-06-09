@@ -44,10 +44,12 @@ function PersonCard() {
 		description: "", // регистрации, проживания, почтовый etc
 		index: "",
 		subject: "",
+		district: "",
 		city: "",
 		settlement: "",
 		street: "",
 		building: "",
+		corp: "",
 		appartment: "",
 	}
 	const emptyPhone = {
@@ -99,10 +101,11 @@ function PersonCard() {
 		name: "phone",
 	  });
 
-	const personNames = {
+	const searchData = {
 		lastName: watch('lastName'),
 		firstName: watch('firstName'),
 		middleName: watch('middleName'),
+		innNumber: watch('innNumber'),
 	};
 
 	function personCaseTrigger(data) {
@@ -215,9 +218,11 @@ function PersonCard() {
 		personCaseTrigger(obj);
 	}
 
-	function receivePerson(person) {
-		personCaseTrigger(person);
-		reset(person)
+	function receiveFromChild(obj) {
+		personCaseTrigger(obj);
+		obj.birthDate = dayjs(obj.birthDate).format("YYYY-MM-DD");
+		obj.passportDate = dayjs(obj.passportDate).format("YYYY-MM-DD");
+		reset(obj)
 	}
 
 	return (
@@ -372,7 +377,6 @@ function PersonCard() {
 								Код подразделения
 							</label>
 							<InputMask
-								type="text"
 								className="form-control"
 								id="passportCode"
 								placeholder="110-003"
@@ -401,7 +405,6 @@ function PersonCard() {
 						<div className="col-md-2 mb-3">
 							<label htmlFor="snilsNumber">СНИЛС</label>
 							<InputMask
-								type="text"
 								className="form-control"
 								id="snilsNumber"
 								placeholder="111-222-333 44"
@@ -476,8 +479,26 @@ function PersonCard() {
 										placeholder="Край, область, округ..."
 									/>
 								</div>
+								{/* Район */}
+								<div className="col-md-2 mb-3">
+									<label htmlFor="address-district">
+									Район
+									</label>
+									{/* district */}
+									<input
+										type="text"
+										id="address-district"
+										className="form-control"
+										{...register(`address.${index}.district`, {
+											onChange: (e) => {
+												onChange(e, index);
+											},
+										})}
+										placeholder="Район"
+									/>
+								</div>
 								{/* Город */}
-								<div className="col-md-3 mb-3">
+								<div className="col-md-2 mb-3">
 									<label htmlFor="address-city">Город</label>
 									{/* city */}
 									<input
@@ -493,7 +514,7 @@ function PersonCard() {
 									/>
 								</div>
 								{/* Населенный пункт */}
-								<div className="col-md-3 mb-3">
+								<div className="col-md-2 mb-3">
 									<label htmlFor="address-settlement">
 										Населенный пункт
 									</label>
@@ -555,6 +576,27 @@ function PersonCard() {
 										placeholder="д. 3"
 									/>
 								</div>
+								{/* Корпус */}
+								<div className="col-md-1 mb-3">
+									<label htmlFor="address-corp">
+										Корпус
+									</label>
+									{/* building */}
+									<input
+										type="text"
+										id="address-corp"
+										className="form-control"
+										{...register(
+											`address.${index}.corp`,
+											{
+												onChange: (e) => {
+													onChange(e, index);
+												},
+											}
+										)}
+										placeholder="корп. 3"
+									/>
+								</div>
 								{/* Квартира */}
 								<div className="col-md-1 mb-3">
 									<label htmlFor="address-appartment">
@@ -613,11 +655,7 @@ function PersonCard() {
 										// type="tel"
 										id="phone-number"
 										className="form-control"
-										{...register(`phone.${index}.number`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
+										{...register(`phone.${index}.number`)}
 										placeholder="Номер"
 									/>
 								</div>
@@ -680,7 +718,7 @@ function PersonCard() {
 									(необязательно)
 								</span> */}
 							</label>
-							<InputMask
+							<input
 								type="text"
 								className="form-control"
 								id="email"
@@ -748,8 +786,8 @@ function PersonCard() {
 				</div>
 			</form>
 			<CheckBeforeCreate
-				receivePerson={receivePerson}
-				person={personNames}
+				receiveFromChild={receiveFromChild}
+				whatToSearch={searchData}
 			/>
 		</div>
 	);

@@ -1,3 +1,5 @@
+//  TODO !important
+// refactor server' code (make it shorter)
 // TODO later
 // add require('express').Router() https://dev.to/albertofdzm/mongoose-mongodb-and-express-596
 // add morgan logger
@@ -31,11 +33,13 @@ mongoose.set("useNewUrlParser", true);
 mongoose.set("useFindAndModify", false);
 mongoose.set("useCreateIndex", true);
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 
 // Import Model
 const Person = require("./models/Person");
+const Org = require("./models/Org");
+const Bank = require("./models/Bank");
 const Case = require("./models/Case");
 const AnyDoc = require("./models/AnyDoc");
 const User = require("./models/User");
@@ -231,6 +235,141 @@ app.post("/api/persons/delete/:id", (req, res) => {
 });
 // END OF PERSONS =======================================
 
+// ORGS =======================================
+// Get all of our orgs
+//  NOT IN USE
+app.get("/api/orgs/all", (req, res) => {
+	Org.find({})
+		.then((orgs) => {
+			res.json(orgs);
+		});
+});
+
+// Search orgs
+// <CheckBeforeCreate /> <SearchAndResults />
+app.post("/api/orgs/search", (req, res) => {
+	const data = {
+		...req.body,
+	};
+	Org.find(data)
+		.then((orgs) => {
+			res.json(orgs);
+		});
+});
+
+// Get One of Our orgs
+app.get("/api/orgs/:id", (req, res) => {
+	const id = req.params.id.replace("id", "");
+	Org.findOne({ _id: id })
+		.then((orgs) => {
+			res.json(orgs);
+		});
+});
+
+// Create and Update person
+app.post("/api/orgs/write", (req, res) => {
+	const data = {
+		// id: req.body.id,
+		...req.body,
+	};
+	Org.findOne({ _id: req.body._id }, (err, org) => {
+		if (org) {
+			Org.findByIdAndUpdate(req.body._id, data, {
+				upsert: false,
+			}).then((updated) => {
+				res.json(updated);
+			});
+		} else {
+			Org.create(data).then((created) => {
+				res.json(created);
+			});
+		}
+	});
+});
+
+// Delete selected person
+app.post("/api/orgs/delete/:id", (req, res) => {
+	const id = req.params.id.replace("id", "");
+	Org.findByIdAndDelete(id).then(() => {
+		res.json({ message: "Org was deleted" });
+	});
+});
+// END OF ORGS =======================================
+
+// BANKS =======================================
+// Get all of our banks
+//  NOT IN USE
+app.get("/api/banks/all", (req, res) => {
+	Bank.find({})
+		.then((banks) => {
+			res.json(banks);
+		});
+});
+
+// Search banks
+// <CheckBeforeCreate /> <SearchAndResults />
+app.post("/api/banks/search", (req, res) => {
+	const data = {
+		...req.body,
+	};
+	Bank.find(data)
+		.then((banks) => {
+			res.json(banks);
+		});
+});
+
+// Get One of Our banks
+app.get("/api/banks/:id", (req, res) => {
+	const id = req.params.id.replace("id", "");
+	Bank.findOne({ _id: id })
+		.then((banks) => {
+			res.json(banks);
+		});
+});
+
+// Create and Update bank
+/* {
+	synName: docProps.p3banki[index].synName,
+	bik: docProps.p3banki[index].bik,
+	shortName: docProps.p3banki[index].shortName,
+	index: docProps.p3banki[index].index,
+	city: docProps.p3banki[index].city,
+	addressUlDom: docProps.p3banki[index].addressUlDom,
+} */
+app.post("/api/banks/write", (req, res) => {
+	const data = {
+		...req.body,
+	};
+	Bank.findOne({ bik: req.body.bik }, (err, bank) => {
+		if (bank) {
+			if (!bank.synName.includes(req.body.synName)) {
+				bank.synName.push(req.body.synName)
+			} else {
+				delete data.synName
+				Bank.findByIdAndUpdate(req.body._id, data, {
+					upsert: false,
+				}).then((updated) => {
+					res.json(updated);
+				});
+			}
+		} else {
+			Bank.create(data).then((created) => {
+				res.json(created);
+			});
+		}
+	});
+});
+
+// Delete selected bank
+app.post("/api/banks/delete/:id", (req, res) => {
+	const id = req.params.id.replace("id", "");
+	Bank.findByIdAndDelete(id).then(() => {
+		res.json({ message: "Bank was deleted" });
+	});
+});
+// END OF BANKS =======================================
+
+
 // CASES =======================================
 app.post("/api/cases/write", (req, res) => {
 	const data = {
@@ -391,7 +530,6 @@ app.post("/api/doctemplates/write", (req, res) => {
 				res.json(updated);
 			});
 		} else {
-			req.body.title = req.body.title + ' КОПИЯ'
 			DocTemplate.create(req.body).then((created) => {
 				res.json(created);
 			});

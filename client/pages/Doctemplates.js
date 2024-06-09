@@ -50,6 +50,12 @@ function Doctemplates() {
 						<li>
 							<Link to="/docs/templateagreement">Договор</Link> • 
 						</li>
+						<li>
+							<Link to="/docs/templatebankrotopis">Опись имущества гражданина</Link> • 
+						</li>
+						<li>
+							<Link to="/docs/templatebankrotspisok">Cписок кредиторов и должников гражданина</Link> • 
+						</li>
 						{/* GET TEMPLATES FROM DB
 						{templateList.map((template, index) => (
 							<li key={index}>

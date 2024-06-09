@@ -24,7 +24,10 @@ function Header() {
 	const caseName = useSelector((state) => state.caseReducer);
 	const doc = useSelector((state) => state.docReducer);
 
-	console.log("caseName: ", caseName);
+	console.log("person in redux: ", person);
+	console.log("caseName in redux: ", caseName);
+	console.log("template in redux: ", template);
+	console.log("doc in redux: ", doc);
 
 	function clearState() {
 		dispatch(removeActionCreator())
@@ -74,6 +77,10 @@ function Header() {
 									<NavLink to={`/persons/id${person._id}`}>Клиент</NavLink> :
 									<NavLink to={`/person`}>Клиент</NavLink>
 								}
+							</li>
+							&nbsp;
+							<li>
+									<NavLink to={`/orgs`}>Орг•</NavLink>
 							</li>
 							&nbsp; | &nbsp;
 							<li>
@@ -140,14 +147,14 @@ function Header() {
 						person._id && <span className="attention"> | Дело не выбрано</span>
 					)}
 
-					{template._id && ` | `}
+					{template &&
 					<Link
 						to={{
 							pathname: `/docs/` + (template.templateURLName ? template.templateURLName : `anydoc2`)
 						}}
 					>
-						{template.title && `${template.title}`}
-					</Link>
+						{template.title && ` | ${template.title}`}
+					</Link>}
 					
 					{doc._id && ` | `}
 					<Link

@@ -37,7 +37,7 @@ function TemplateAgreement() {
 
 	const [unusedNumbersState, setUnusedNumbersState] = useState([]);
 	useEffect(() => {
-		async function getData() {
+		async function getNum() {
 			const data = await getCurrentYearNumbers("Договор");
 			const unusedNumbers = getUnusedNumbers(data).sort((a, b) => a - b);
 			setUnusedNumbersState(unusedNumbers)
@@ -60,7 +60,7 @@ function TemplateAgreement() {
 					console.error("Error fetching document template:", error);
 				}
 		}
-		getData();
+		getNum();
 		getTemplate()
 	}, []);
 
@@ -514,6 +514,7 @@ function TemplateAgreement() {
 
 			<TinyEditorAndButtons
 				tokens={tokens}
+				docProps={docProps}
 				templateURLName={templateURLName}
 				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - Договор банкротство`}
 			/>

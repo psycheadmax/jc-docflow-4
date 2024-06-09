@@ -7,48 +7,65 @@ require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
-function CheckBeforeCreate({receivePerson, person}) {
-    const [persons, setPersons] = useState([])
-
-    const givePerson = (person) => {
-        receivePerson(person)
+function CheckBeforeCreate({receiveFromChild, whatToSearch}) {
+    const [foundData, setFoundData] = useState([])
+    const giveToParent = (obj) => {
+        receiveFromChild(obj)
     }
+    let dataType
+    let data = {}
+    if (whatToSearch.lastName) {
+        dataType = 'persons'
+        data = {
+            lastName: { $regex: whatToSearch.lastName },
+            firstName: { $regex: whatToSearch.firstName },
+            middleName: { $regex: whatToSearch.middleName },
+            innNumber: { $regex: whatToSearch.innNumber },
+        }
+    }
+    if (whatToSearch.shortName) {
+        dataType = 'orgs'
+        data = {
+            shortName: { $regex: whatToSearch.shortName },
+            innOrg: { $regex: whatToSearch.innOrg },
+        }
+    }
+    
+
 
     useEffect(() => {
         search()
         /* it must fix some problem */
         return() => {
-            setPersons([])
+            setFoundData([])
         }
         /* it must fix some problem */
-      }, [person]);
+      }, [whatToSearch]);
 
-    const len = persons.length
+    const len = foundData.length
 
-    function search() {
-        const data = {
-            lastName: { $regex: person.lastName },
-            firstName: { $regex: person.firstName },
-            middleName: { $regex: person.middleName },
+    async function search() {     
+        if (dataType) {
+            await axios.post(`${SERVER_IP}:${SERVER_PORT}/api/${dataType}/search`, data).then(found => {
+                setFoundData(found.data)
+            });
         }
-        axios.post(`${SERVER_IP}:${SERVER_PORT}/api/persons/search`, data).then(persons => {
-            setPersons(persons.data)
-        });
     }
 
     return (
         <div>
             <h3>Найдено похожих записей в БД: {len}</h3>
                 <ul className="list-group">
-                { persons.map((person, index) => (
+                { foundData.map((item, index) => (
                             (index < 30) 
                             ?  
-                            <li className="list-group-item" key={index} id={person._id}> 
-                                <Link onClick={() => givePerson(person)} to={{
-                                    pathname: `/persons/id${person._id}`,
+                            <li className="list-group-item" key={index} id={item._id}> 
+                                <Link onClick={() => giveToParent(item)} to={{
+                                    pathname: `/${dataType}/id${item._id}`,
                                     // propsPerson: person
                                     }}>
-                                    {person.lastName} {person.firstName} {person.middleName}
+                                    {(dataType === 'persons') && (`${item.lastName} ${item.firstName} ${item.middleName}`)}
+                                    {(dataType === 'orgs') && (`${item.shortName} ИНН: ${item.innOrg}`)}
                                 </Link>
                             </li>
                             :

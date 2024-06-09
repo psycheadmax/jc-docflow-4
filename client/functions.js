@@ -70,7 +70,7 @@ function createTokens(data) {
 	data.birthPlace && tokensArray.push(["%МЕСТОРОЖДЕНИЯ%", data.birthPlace]);
 	data.passportSerie &&
 		tokensArray.push(["%ПАСПОРТСЕРИЯ%", data.passportSerie]);
-	data.pasportNumber &&
+	data.passportNumber &&
 		tokensArray.push(["%ПАСПОРТНОМЕР%", data.passportNumber]);
 	data.passportDate &&
 		tokensArray.push([
@@ -283,6 +283,17 @@ function paymentsSchedule(
 	return schedule;
   }  
 
+  function excelDateToJSDate(excelDate) {
+	const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
+	return date.toISOString().slice(0, 10); // date in 'YYYY-MM-DD' format
+  }
+
+  function convertHTMLentities(str) {
+	const dummy = document.createElement('div')
+	dummy.innerHTML = str
+	return dummy.textContent
+  }
+
 export {
 	getDataByIdFromURL,
 	deleteRub,
@@ -291,4 +302,6 @@ export {
 	getUnusedNumbers,
 	getCurrentYearNumbers,
 	paymentsSchedule,
+	excelDateToJSDate,
+	convertHTMLentities
 };

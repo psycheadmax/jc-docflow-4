@@ -177,5 +177,6 @@ somenotes.js
 .vscode
 .idea
 backups
+banks.list.js
 
 # End of https://www.toptal.com/developers/gitignore/api/react,node,yarn
