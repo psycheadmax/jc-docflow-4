@@ -124,7 +124,7 @@ function createTokens(data) {
 	return tokensArray;
 }
 
-function fromTokensToResult(tokensArray, content, gender) {
+function fromTokensToResult(tokensArray, content, gender, blockVariant) {
 	// tokens replace
 	tokensArray.forEach((item) => {
 		content = content.replaceAll(item[0], item[1]);
@@ -144,8 +144,19 @@ function fromTokensToResult(tokensArray, content, gender) {
 
 	// (!regex.test(content) && content.includes('@')  || content.includes('%')) &&
 	// alert(`Кажется в шаблоне есть несработавшие токены`)
-	
-	return output;
+	const blockVariantDelete = new RegExp(`<p.*?<span lang="RU">&lt;\\[ВАРИАНТ(?!${blockVariant.slice(-2)})\\d{2}[\\s\\S]*?ВАРИАНТ(?!${blockVariant.slice(-2)})\\d{2}\\]&gt;<\/span><\/p>`, 'gm') //WORKING
+	output = output.replaceAll(blockVariantDelete, '')
+
+	const blockVariantCleanStart = new RegExp(`<p.*?<span lang="RU">&lt;\\[ВАРИАНТ${blockVariant.slice(-2)}`, 'gm')
+	const blockVariantCleanEnd = new RegExp(`ВАРИАНТ${blockVariant.slice(-2)}\\]&gt;.*<\/p>`, 'gm')
+
+	output = output.replaceAll(blockVariantCleanStart, '')
+	output = output.replaceAll(blockVariantCleanEnd, '')
+
+	/* 
+	LAST STOP  make regexp constructor
+	 */
+	return output
 }
 
 function getUnusedNumbers(arr) {

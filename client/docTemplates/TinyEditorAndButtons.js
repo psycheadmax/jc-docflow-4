@@ -35,7 +35,7 @@ const SERVER_IP = process.env["SERVER_IP"];
 const TINYMCEPATH =
 	"https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js";
 
-function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=null, templateURLName=null, logValues=null}) {
+function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=null, templateURLName=null, logValues=null, blockVariant=null}) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const person = useSelector((state) => state.personReducer.person);
@@ -51,6 +51,7 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 	const [destinationDocName, setDestinationDocName] = useState(docName);
 	const [modalActive, setModalActive] = useState(false)
 	const [key, setKey] = useState(0);
+	const [newIdChecked, setNewIdChecked] = useState(false)
 
 	console.log('documentMode:', documentMode)
 
@@ -88,7 +89,8 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 				content: fromTokensToResult(
 					tokens,
 					editorRef.current.getContent(),
-					person.gender
+					person.gender,
+					blockVariant
 				),
 			});
 		} else {
@@ -101,7 +103,36 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 		}
 	};
 
+	function newIdHandle() {
+		setNewIdChecked(!newIdChecked)
+	}
+
 	const saveDocTemp = async () => {
+		if (newIdChecked) {
+			if (confirm(`Будет создан новый шаблон с заданным именем и под новым id.`)) {
+				const data = {
+					...templateData,
+					templateURLName: templateURLName,
+					content: editorRef.current.getContent(),
+				}
+			try {
+				await axios
+					.post(
+						`${SERVER_IP}:${SERVER_PORT}/api/doctemplates/new`,
+						data
+					)
+					.then((item) => {
+						console.log(item.data)
+						alert(`Шаблон ${item.data.title} создан`);
+						setModalActive(false)
+					});
+			} catch (error) {
+				console.log(error);
+			}} else {
+				return
+			}
+			return
+		}
 		let templateExist;
 		const query = { title: templateData.title };
 		console.log(query)
@@ -402,7 +433,21 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 											Удалить
 										</button>
 									)}
+									<input
+										onChange={newIdHandle}
+										className="form-check-input"
+										type="checkbox"
+										id='newId'
+										checked={newIdChecked}
+										title="создать шаблон с новым id"
+									/>
 								</div>
+{/* 								<div className="col-md-2 mb-3">
+									<label className="form-check-label" htmlFor='newId'>
+										new id
+									</label>
+
+								</div> */}
 							</div>
 						</div>
 					</Modal>

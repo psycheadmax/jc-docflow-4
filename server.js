@@ -534,21 +534,14 @@ app.post("/api/doctemplates/write", (req, res) => {
 				res.json(created);
 			});
 		}
-	// DocTemplate.findOne(req.body.title, (err, doctemplate) => {
-	// 	console.log(doctemplate);
-		// if (doctemplate) {
-		// 	DocTemplate.findByIdAndUpdate(doctemplate._id, req.body, {
-		// 		upsert: false,
-		// 	}).then((updated) => {
-		// 		res.json(updated);
-		// 	});
-		// } else {
-		// 	delete req.body._id;
-		// 	DocTemplate.create(req.body).then((created) => {
-		// 		res.json(created);
-		// 	});
-		// }
-	// });
+});
+
+//  new doctemplate with no questions
+app.post("/api/doctemplates/new", (req, res) => {
+	delete req.body._id
+	DocTemplate.create(req.body).then((created) => {
+		res.json(created);
+	});
 });
 
 // delete doctemplate

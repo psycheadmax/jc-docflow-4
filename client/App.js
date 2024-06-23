@@ -19,6 +19,7 @@ import { TempAnyDoc2 } from './docTemplates/TempAnyDoc2';
 import { TemplateAgreement } from './docTemplates/TemplateAgreement';
 import { TemplateBankrotOpis } from './docTemplates/TemplateBankrotOpis';
 import { TemplateBankrotSpisok } from './docTemplates/TemplateBankrotSpisok';
+import { TemplateBankrotZayavlenie } from './docTemplates/TemplateBankrotZayavlenie';
 
 function App() {
   return(
@@ -44,6 +45,7 @@ function App() {
         <Route path='docs/templateagreement' element={<TemplateAgreement />} />
         <Route path='docs/templatebankrotopis' element={<TemplateBankrotOpis />} />
         <Route path='docs/templatebankrotspisok' element={<TemplateBankrotSpisok />} />
+        <Route path='docs/templatebankrotzayavlenie' element={<TemplateBankrotZayavlenie />} />
         <Route path='*' element={<PageNotFound />} />
       </Route>
     </Routes>

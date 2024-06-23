@@ -6,6 +6,7 @@ import axios from "axios";
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 import dayjs from "dayjs";
+import 'dayjs/locale/ru'
 import {
 	createTokens,
 	deleteRub,
@@ -22,8 +23,10 @@ import { addressPhoneUpdateActionCreator } from '../store/personReducer';
 import { PageNumberSeparator } from 'docx';
 import { table } from 'console';
 import * as XLSX from 'xlsx';
-const fs = require('fs');
-const pdf = require('pdf-parse');
+// import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
+import * as pdfjsLib from "pdfjs-dist/build/pdf";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker";
+
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
@@ -63,7 +66,6 @@ function TemplateBankrotSpisok() {
 // LAST STOP
 // method to easily create db string for template - LATER
 // method to get docProps from other docProps - LATER
-// try pdf-parse package
 
 
 	const initialDocProps = {
@@ -77,6 +79,7 @@ function TemplateBankrotSpisok() {
 	};
 
 	const [docProps, setDocProps] = useState(initialDocProps);
+	const [pdfContent, setPdfContent] = useState('')
 
 	const {
 		register,
@@ -163,7 +166,7 @@ function TemplateBankrotSpisok() {
 </td>
 </tr>
 `
-			const tableHeader1 = `ti-irow: 1; height: 19.85pt;">
+			const tableHeader1 = `<tr style="mso-yfti-irow: 1; height: 19.85pt;">
 <td style="width: 20.6pt; border-top: none; border-left: solid navy 1.0pt; border-bottom: solid navy 1.0pt; border-right: none; mso-border-top-alt: solid navy .5pt; mso-border-left-alt: solid navy .5pt; mso-border-bottom-alt: solid navy .5pt; padding: 0cm 0cm 0cm 0cm; height: 19.85pt;" width="27">
 <p class="MsoNormal" style="text-align: center; margin: 0cm 2.85pt .0001pt 2.85pt;" align="center"><strong style="mso-bidi-font-weight: normal;"><span lang="RU">1</span></strong></p>
 </td>
@@ -233,8 +236,8 @@ function TemplateBankrotSpisok() {
 			</table>`
 			let tableMiddle1 = ``
 			let tableMiddle2 = ``
-			const iterations1 = values.p11kreditorsNePredprinDen.length > 3 ? values.p3banki.length : 3
-			const iterations2 = values.p12kreditorsNePredprinPlat.length > 2 ? values.p3banki.length : 2
+			const iterations1 = values.p11kreditorsNePredprinDen.length > 3 ? values.p11kreditorsNePredprinDen.length : 3
+			const iterations2 = values.p12kreditorsNePredprinPlat.length > 2 ? values.p12kreditorsNePredprinPlat.length : 2
 			for (let count = 0; count < iterations1; count++) {
 				const row1 = `<tr style="mso-yfti-irow: 4;">
 				<td style="${tdRowBorderBottom}" valign="bottom" width="27">
@@ -289,66 +292,168 @@ function TemplateBankrotSpisok() {
 		docPropsTokens.push(["%ПРЕДЫДУЩИЕ_ФИО%", values.prevNames || '-'])
 		docPropsTokens.push(["%ТАБЛИЦА1%", table1()])
 		
+		const documentDate = values.date || dayjs()
+		const ruLocaleDate = dayjs(documentDate).locale("ru").format('DD MMMM YYYY')
+		const dateArr = ruLocaleDate.split(' ')
+		docPropsTokens.push(["%ДАТАКРАТКО%", dayjs(documentDate).format('DD.MM.YY')])
+		docPropsTokens.push(["%ДАТАПОЛНОСТЬЮ%", ruLocaleDate])
+		docPropsTokens.push(["%ДАТАЧИСЛО%", dateArr[0]])
+		docPropsTokens.push(["%ДАТАМЕСЯЦБУКВЫ%", dateArr[1]])
+		docPropsTokens.push(["%ДАТАГОД2%", dateArr[2].slice(2, 4)])
+		docPropsTokens.push(["%ДАТАГОД4%", dateArr[2]])
+		
 		return docPropsTokens
 	}
 
-	function importBankAccReport(e) {
-		const file = e.target.files[0];
-		const reader = new FileReader();
-		reader.onload = (event) => {
-			const data = new Uint8Array(event.target.result);
-			const workbook = XLSX.read(data, { type: 'array' });
-			const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
-			const worksheet = workbook.Sheets[sheetName];
-			const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-			jsonDataBankAccInput(jsonData)
-		};
-		reader.readAsArrayBuffer(file);
-	}	
+	async function importPdf() {
+		// await getPdfText(e);
+	  
+		// while (pdfContent === "" || pdfContent === undefined) {
+		//   await new Promise(resolve => setTimeout(resolve, 1000));
+		//   await getPdfText(e);
+		// }
+		const pdfArrInfo = await processPdfText();
+		insertValues(pdfArrInfo);
+	  }
+	
+	async function getPdfText(e) {
+		if (typeof pdfjsLib === "undefined") {
+			console.error("pdfjsLib is not loaded.");
+			return
+		}
 
-	function importPdfCreditReport(e) {
-		const file = e.target.files[0];
-		const reader = new FileReader();
-		reader.onload = (event) => {
-			const buffer = reader.result
-			pdf(buffer).then(function(data) {
-				console.log(data.numpages); // number of pages
-				console.log(data.numrender); // number of rendered pages
-				console.log(data.info); // PDF info
-				console.log(data.metadata);  // PDF metadata
-				console.log(data.version); // PDF.js version // check https://mozilla.github.io/pdf.js/getting_started/
-				console.log(data.text); // PDF text
-			});
-		};
-		reader.readAsArrayBuffer(file)
-	}	
+		try {
+			const file = e.target.files[0];
+			
+			if (file) {
+				const fileReader = new FileReader();
+				
+				let PDFText = ''
+				fileReader.onload = async function(event) {
+					try {
+						const arrayBuffer = event.target.result;
+						const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+						const numPages = pdf.numPages;
+						
+						for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+							const page = await pdf.getPage(pageNum);
+							const textContent = await page.getTextContent();
+							const textItems = textContent.items;
+							
+						let pageText = '';
+					textItems.forEach(item => {
+					  pageText += item.str + ' ';
+					  PDFText += item.str + ' '
+					});
+					console.log('Page', pageNum, pageText);
+					setPdfContent(PDFText)
+				  }
+				//   return PDFText
+				} catch (error) {
+				  console.error('Error loading PDF:', error);
+				}
+			  };
+			  
+			  fileReader.readAsArrayBuffer(file); // Read the selected file as an ArrayBuffer
+			} else {
+			  console.error('No file selected.');
+			}
+		  } catch (error) {
+			console.error('Error loading PDF:', error);
+		  }
+	}
 
-	async function jsonDataBankAccInput(jsonData) {
-		jsonData.shift()
+	async function insertValues(pdfInfo) {
 		let count = 1
-		for (const element of jsonData) {
+		for (const element of pdfInfo) {
 			try {
-			  const exist = await findBankInfo({ synName: element[0] });
-			  appendP3Fields({
-				...emptyP3,
-				num: '3.' + count,
-				numName: 'Счет',
-				synName: element[0],
-				bik: exist[0].bik || '',
-				index: exist[0].index || '',
-				city: exist[0].city || '',
-				shortName: exist[0].shortName || '',
-				addressUlDom: exist[0].addressUlDom || '',
-				vidAndVal: element[4],
-				dateOtkr: dayjs(excelDateToJSDate(element[2])).format('DD.MM.YYYY'),
-				ostatok: "",
-			  });
-			  count++
+				if (element[2] !== 0 && element[2] !== "0") {
+					console.log('element2: ', element[2])
+					const exist = await findBankInfo({ synName: element[0] }); 
+					appendP11Fields({
+						...emptyP11,
+						num: '1.'+count,
+						sodObyaz: exist ? "Кредит" : "",
+						kreditor: exist[0] ? `${exist[0].shortName}` : element[0],
+						mestoKreditor: exist[0] ? `${exist[0].index} ${exist[0].city} ${exist[0].addressUlDom} ` : '',
+						osnVoznik: `Кредитный договор от ${element[1]}`,
+						sumVsego: element[2] || '',
+						sumDolg: element[3] || '',
+						shtrafPeni: 0,
+						});
+					count++
+				}
 			} catch (error) {
 			  console.error('Error fetching bank info:', error);
 			}
 		  }
 		handleChange()
+	}
+	
+	async function processPdfText() {
+		const str = pdfContent
+		const regexForMainStr = /№   Источник   данных \/ вид   обязательств   Сумма   и   валюта обязательства Общая   задолженность   Просроченная задолженность Статус   платежа.*Внимательно   проверьте   данные   кредитной   организации ,   сумму   займа   и   информацию   о   платежах \./
+		const regexForExtraStr = /Дата\s*совершения\s*сделки\s*\d*\s*[а-я]*\s*\d*/g
+		const mainStr = [...str.match(regexForMainStr)][0]
+		console.log('mainStr is: ', mainStr)
+		const extraStr = [...str.matchAll(regexForExtraStr)].map(match => match[0])
+		console.log('extraStr is: ', extraStr)
+
+		const deleteStrings = [
+			`№   Источник   данных \/ вид   обязательств   Сумма   и   валюта обязательства Общая   задолженность   Просроченная задолженность Статус   платежа`,
+			`Договор   займа   ( кредита ) -   Кредит   « овердрафт » ( кредитование   счета )`,
+			`Без   просрочек`,
+			/\d*\sДействующие   кредитные   договоры/g,
+			/Сформирован.*v\d*\.\d*.\d*/g,
+			`Договор   займа   ( кредита ) -   Иной   необеспеченный заем`,
+			/Просрочка\s*c\s*\d*\.\d*\.\d*/g,
+			/Была\s*просрочка\s*по\s*\d*\.\d*\.\d*/g,
+			`Внимательно   проверьте   данные   кредитной   организации ,   сумму   займа   и   информацию   о   платежах .`,
+			`Дата   совершения   сделки`
+		]
+		
+		function cleanString(inputStr) {
+		let newString = inputStr
+		deleteStrings.forEach(element => {
+			newString = newString.replaceAll(element, '')
+		})
+		return newString.replace(/\s+/g, " ").trim()
+		}
+		
+		function cleanArray(cleanedStr) {
+		const arr = cleanedStr.split('₽')
+		let newArr = []
+		arr.forEach((element, index) => {
+			let item = element
+			if (index === 0 || index % 3 === 0) {
+			item = item.replace(/[0-9,]/g, "")
+			item = item.replace(/\s+/g, " ")//removes few whitespaces in a row 
+			} else  {
+			item = item.replace(/\s+/g, "")
+			}
+			if (index+1 !== arr.length) {
+			newArr.push(item.trim())
+			}
+		})
+		return newArr
+		}
+
+		function joinMainExtra(main, extra) {
+		let result = []
+		extra.forEach((element, index) => {
+			const cursor = index*3
+			result.push([main[cursor], extra[index], main[cursor+1], main[cursor+2]])
+		})
+		return result
+		}
+
+		const cleanedMainStr = cleanArray(cleanString(mainStr))
+		const cleanedExtraStr = cleanString(extraStr.join()).split(', ')
+		// console.log(cleanedExtraStr)
+
+		const result = joinMainExtra(cleanedMainStr, cleanedExtraStr)
+
+		return result
 	}
 
 	async function findBankInfo(query) {
@@ -357,23 +462,6 @@ function TemplateBankrotSpisok() {
 				`${SERVER_IP}:${SERVER_PORT}/api/banks/search`, query
 			)
 			return response.data
-		} catch (error) {
-			console.error('Error fetching data:', error)
-		}
-	}
-
-	async function findInBikInfo(index) {
-		const value = docProps.p3banki[index].bik
-		const apiUrl = `https://bik-info.ru/api.html?type=json&bik=${value}`
-		try {
-			const response = await axios.get(apiUrl)
-			if (response.data.bik) {
-				setValue(`p3banki.${index}.shortName`, convertHTMLentities(response.data.namemini))
-				setValue(`p3banki.${index}.index`, convertHTMLentities(response.data.index))
-				setValue(`p3banki.${index}.city`, convertHTMLentities(response.data.city))
-				setValue(`p3banki.${index}.addressUlDom`, convertHTMLentities(response.data.address))
-				handleChange()
-			}
 		} catch (error) {
 			console.error('Error fetching data:', error)
 		}
@@ -443,8 +531,14 @@ function TemplateBankrotSpisok() {
 					<div className="col-sm-2 mb-1">
 						<button type="button" className="btn btn-light btn-sm" id="phone" onClick={() => appendP11Fields({...emptyP11, num: `1.${p11Fields.length+1}`})}>+ Добавить счет</button>
 					</div>
+				</div>
+				<div className="row">
 					<div className="col-sm-3 mb-3">
-						<input className="form-control-sm" type="file" id="formFile" onChange={importBankAccReport} title='Выберите файл для импорта' />
+						<input className="form-control-sm" type="file" id="formFile" onChange={getPdfText} title='Выберите файл для импорта' />
+					</div>
+					<div className="col-sm-3 mb-3">
+						{pdfContent !== '' ? 'файл загружен' : ''}
+						{pdfContent !== '' ? <button type="button" className="btn btn-light btn-sm" id="phone" onClick={() => importPdf()}>Вставить данные</button> : ''}
 					</div>
 				</div>
 
@@ -463,9 +557,10 @@ function TemplateBankrotSpisok() {
 					<div className="col-sm-2 mb-1">
 						<button type="button" className="btn btn-light btn-sm" id="phone" onClick={() => appendP12Fields({...emptyP12, num: `2.${p12Fields.length+1}`})}>+ Добавить счет</button>
 					</div>
-					<div className="col-sm-3 mb-3">
-						<input className="form-control-sm" type="file" id="formFile" onChange={importPdfCreditReport} title='Выберите файл для импорта' />
-					</div>
+				</div>
+				<div className="col-md-2 mb-3">
+					<label htmlFor="date">Дата документа</label>
+					<input type="date" className="form-control" id="date" {...register("date", { onChange: () => handleChange() })} />
 				</div>
 				</form>
 			</div>
@@ -476,7 +571,7 @@ function TemplateBankrotSpisok() {
 				docProps={docProps}
 				tokens={tokens}
 				templateURLName={templateURLName}
-				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - опись имущества гражданина`}
+				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - список кредиторов и должников гражданина`}
 				logValues={logValues}
 			/>
 		</>

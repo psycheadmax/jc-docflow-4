@@ -30,6 +30,7 @@
     "mongoose": "^5.4.6",
     "nodemon": "^1.18.9",
     "parcel": "^1.11.0",
+    "pdfjs-dist": "^4.3.136",
     "petrovich": "^0.2.1",
     "re": "^0.1.4",
     "react": "^17.0.1",

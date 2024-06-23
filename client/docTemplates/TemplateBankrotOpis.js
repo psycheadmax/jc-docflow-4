@@ -6,6 +6,7 @@ import axios from "axios";
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '.env') });
 import dayjs from "dayjs";
+import 'dayjs/locale/ru'
 import {
 	createTokens,
 	deleteRub,
@@ -689,6 +690,16 @@ function TemplateBankrotOpis() {
 		docPropsTokens.push(["%ТАБЛИЦА4%", table4()])
 		docPropsTokens.push(["%ТАБЛИЦА5%", table5()])
 		docPropsTokens.push(["%ТАБЛИЦА6%", table6()])
+
+		const documentDate = values.date || dayjs()
+		const ruLocaleDate = dayjs(documentDate).locale("ru").format('DD MMMM YYYY')
+		const dateArr = ruLocaleDate.split(' ')
+		docPropsTokens.push(["%ДАТАКРАТКО%", dayjs(documentDate).format('DD.MM.YY')])
+		docPropsTokens.push(["%ДАТАПОЛНОСТЬЮ%", ruLocaleDate])
+		docPropsTokens.push(["%ДАТАЧИСЛО%", dateArr[0]])
+		docPropsTokens.push(["%ДАТАМЕСЯЦБУКВЫ%", dateArr[1]])
+		docPropsTokens.push(["%ДАТАГОД2%", dateArr[2].slice(2, 4)])
+		docPropsTokens.push(["%ДАТАГОД4%", dateArr[2]])
 		
 		return docPropsTokens
 	}

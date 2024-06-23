@@ -56,6 +56,9 @@ function Doctemplates() {
 						<li>
 							<Link to="/docs/templatebankrotspisok">Cписок кредиторов и должников гражданина</Link> • 
 						</li>
+						<li>
+							<Link to="/docs/templatebankrotzayavlenie">Заявление гражданина-должника о признании банкротом</Link> • 
+						</li>
 						{/* GET TEMPLATES FROM DB
 						{templateList.map((template, index) => (
 							<li key={index}>
