@@ -12,10 +12,13 @@ import {
 import { removeCaseActionCreator } from "../store/caseReducer";
 import axios from "axios";
 import { CheckBeforeCreate } from "../components/CheckBeforeCreate";
-import { getDataByIdFromURL } from "../functions";
+import { excelDateToJSDate, getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+import * as XLSX from 'xlsx';
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '.env') });
+const _ = require("lodash")
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
@@ -44,10 +47,12 @@ function PersonCard() {
 		description: "", // регистрации, проживания, почтовый etc
 		index: "",
 		subject: "",
+		district: "",
 		city: "",
 		settlement: "",
 		street: "",
 		building: "",
+		corp: "",
 		appartment: "",
 	}
 	const emptyPhone = {
@@ -99,10 +104,11 @@ function PersonCard() {
 		name: "phone",
 	  });
 
-	const personNames = {
+	const searchData = {
 		lastName: watch('lastName'),
 		firstName: watch('firstName'),
 		middleName: watch('middleName'),
+		innNumber: watch('innNumber'),
 	};
 
 	function personCaseTrigger(data) {
@@ -215,10 +221,64 @@ function PersonCard() {
 		personCaseTrigger(obj);
 	}
 
-	function receivePerson(person) {
-		personCaseTrigger(person);
-		reset(person)
+	function receiveFromChild(obj) {
+		personCaseTrigger(obj);
+		obj.birthDate = dayjs(obj.birthDate).format("YYYY-MM-DD");
+		obj.passportDate = dayjs(obj.passportDate).format("YYYY-MM-DD");
+		reset(obj)
 	}
+
+	function importFromDogovorXLS(e) {
+		const file = e.target.files[0];
+		const reader = new FileReader();
+		reader.onload = (event) => {
+			const data = new Uint8Array(event.target.result);
+			const workbook = XLSX.read(data, { type: 'array' });
+			const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
+			const worksheet = workbook.Sheets[sheetName];
+			const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+			console.log('dogovor: ', jsonData)
+
+			const addresses = []
+				jsonData[12][2] !== '-' && ( addresses.push({
+					'description': 'регистрации',
+					'city': jsonData[12][2],
+					'street': jsonData[13][2],
+					'building': jsonData[14][2],
+					'appartment': jsonData[15][2]
+				}) )
+			
+			const phones = []
+				jsonData[17][2] !== '-' && ( phones.push({'description': jsonData[17][1].toLowerCase(), 'number': jsonData[17][2].replace(/\D/g, '')}) )
+				jsonData[18][2] !== '-'  && ( phones.push({'description': jsonData[18][1].toLowerCase(), 'number': jsonData[18][2].replace(/\D/g, '')}) )
+				jsonData[19][2] !== '-'  && ( phones.push({'description': jsonData[19][1].toLowerCase(), 'number': jsonData[19][2].replace(/\D/g, '')}) )
+
+				dayjs.extend(customParseFormat)
+			const dogovorDataObj = {
+				date: dayjs(excelDateToJSDate(jsonData[2][2])).format('YYYY-MM-DD'),
+				lastName: jsonData[3][2],
+				firstName: jsonData[4][2],
+				middleName: jsonData[5][2],
+				gender: jsonData[6][7].toLowerCase() === 'ж' ? 'жен' : 'муж',
+				birthDate: dayjs(jsonData[6][2].replace('г.', ''), 'DD.MM.YYYY').format('YYYY-MM-DD'),
+				birthPlace: jsonData[7][2],
+				passportSerie: jsonData[8][2].replaceAll(' ', ''),
+				passportNumber: jsonData[8][4],
+				passportDate: dayjs(jsonData[9][2].replace('г.', ''), 'DD.MM.YYYY').format('YYYY-MM-DD'),
+				passportPlace: jsonData[10][2],
+				passportCode: jsonData[11][2],
+				phone: phones,
+				address: addresses
+			}
+			console.log('getValues:', getValues())
+			console.log('dogovorDataObj:', dogovorDataObj)
+			const mergedPerson = _.merge(getValues(), dogovorDataObj)
+			reset(mergedPerson)
+		};
+		reader.readAsArrayBuffer(file);
+	}	
+
+	// LAST STOP db import export dump operations findout
 
 	return (
 		<div className="component">
@@ -226,6 +286,12 @@ function PersonCard() {
 				<hr className="mb-4" />
 				{/* ФИО */}
 				<fieldset>
+				<div className="buttons">
+					<div className="col-sm-3 mb-3">
+						<label htmlFor="formFile">Выберите файл договор.xls для импорта (поля будут замещены)</label>
+						<input className="form-control-sm" type="file" id="formFile" onChange={importFromDogovorXLS} title='Выберите файл договор.xls для импорта' />
+					</div>
+				</div>					
 					<legend className="bg-light">ФИО</legend>
 					<div className="row">
 						{/* Фамилия */}
@@ -372,7 +438,6 @@ function PersonCard() {
 								Код подразделения
 							</label>
 							<InputMask
-								type="text"
 								className="form-control"
 								id="passportCode"
 								placeholder="110-003"
@@ -401,7 +466,6 @@ function PersonCard() {
 						<div className="col-md-2 mb-3">
 							<label htmlFor="snilsNumber">СНИЛС</label>
 							<InputMask
-								type="text"
 								className="form-control"
 								id="snilsNumber"
 								placeholder="111-222-333 44"
@@ -427,7 +491,7 @@ function PersonCard() {
 										id="address-type"
 										className="form-control"
 										list="descriptionList"
-										{...register(`address.${index}.type`, {
+										{...register(`address.${index}.description`, {
 											onChange: (e) => {
 												onChange(e, index);
 											},
@@ -476,8 +540,26 @@ function PersonCard() {
 										placeholder="Край, область, округ..."
 									/>
 								</div>
+								{/* Район */}
+								<div className="col-md-2 mb-3">
+									<label htmlFor="address-district">
+									Район
+									</label>
+									{/* district */}
+									<input
+										type="text"
+										id="address-district"
+										className="form-control"
+										{...register(`address.${index}.district`, {
+											onChange: (e) => {
+												onChange(e, index);
+											},
+										})}
+										placeholder="Район"
+									/>
+								</div>
 								{/* Город */}
-								<div className="col-md-3 mb-3">
+								<div className="col-md-2 mb-3">
 									<label htmlFor="address-city">Город</label>
 									{/* city */}
 									<input
@@ -493,7 +575,7 @@ function PersonCard() {
 									/>
 								</div>
 								{/* Населенный пункт */}
-								<div className="col-md-3 mb-3">
+								<div className="col-md-2 mb-3">
 									<label htmlFor="address-settlement">
 										Населенный пункт
 									</label>
@@ -555,6 +637,27 @@ function PersonCard() {
 										placeholder="д. 3"
 									/>
 								</div>
+								{/* Корпус */}
+								<div className="col-md-1 mb-3">
+									<label htmlFor="address-corp">
+										Корпус
+									</label>
+									{/* building */}
+									<input
+										type="text"
+										id="address-corp"
+										className="form-control"
+										{...register(
+											`address.${index}.corp`,
+											{
+												onChange: (e) => {
+													onChange(e, index);
+												},
+											}
+										)}
+										placeholder="корп. 3"
+									/>
+								</div>
 								{/* Квартира */}
 								<div className="col-md-1 mb-3">
 									<label htmlFor="address-appartment">
@@ -613,11 +716,7 @@ function PersonCard() {
 										// type="tel"
 										id="phone-number"
 										className="form-control"
-										{...register(`phone.${index}.number`, {
-											onChange: (e) => {
-												onChange(e, index);
-											},
-										})}
+										{...register(`phone.${index}.number`)}
 										placeholder="Номер"
 									/>
 								</div>
@@ -680,7 +779,7 @@ function PersonCard() {
 									(необязательно)
 								</span> */}
 							</label>
-							<InputMask
+							<input
 								type="text"
 								className="form-control"
 								id="email"
@@ -748,8 +847,8 @@ function PersonCard() {
 				</div>
 			</form>
 			<CheckBeforeCreate
-				receivePerson={receivePerson}
-				person={personNames}
+				receiveFromChild={receiveFromChild}
+				whatToSearch={searchData}
 			/>
 		</div>
 	);

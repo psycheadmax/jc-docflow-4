@@ -21,9 +21,9 @@ const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
 
 
-function TemplateAgreement() {
-	// Шаблон Договора по банкротству
-	const templateURLName = 'templateagreement'
+function TemplateBankrotZayavlenie() {
+	// Шаблон Заявление гражданина-должника о признании банкротом
+	const templateURLName = 'templatebankrotzayavlenie'
 	const rubles = require("rubles").rubles;
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
@@ -48,7 +48,7 @@ function TemplateAgreement() {
 
 		
 		async function getTemplate() {
-			const query = {title: 'Шаблон договора по банкротству'}
+			const query = {title: 'Шаблон заявление гражданина-должника о признании банкротом'}
 				try {
 					const response = await axios.post(
 						`${SERVER_IP}:${SERVER_PORT}/api/doctemplates/search`, query
@@ -182,11 +182,16 @@ function TemplateAgreement() {
 */}
 
 	async function handleChange() {
+
 		setDocProps(getValues());
 		// setTokens(createTokens({ ...person, ...getValues() }));
 		const extraTokens =  addDocPropsTokens(getValues())
 		setTokens([...createTokens(person)].concat([...addDocPropsTokens(getValues())]));
 		// setTokens([...tokens].concat([...extraTokens]));
+	}
+
+	function logValues() {
+		console.log(getValues());
 	}
 
 	const deleteCaseProps = (e) => {
@@ -211,154 +216,21 @@ function TemplateAgreement() {
 				<form>
 					{/* <form onSubmit={handleSubmit(onSubmit)}> */}
 					<hr className="mb-4" />
-					<h3>Данные договора</h3>
+					<h3>Данные заявления</h3>
 					<fieldset>
 						<legend className="bg-light">Вид оплаты</legend>
 						<div className="row">
-							{/* Сумма */}
-							<div className="col-md-2 mb-3">
-								<label htmlFor="totalSum">Сумма</label>
-								<input
-									type="number"
-									className="form-control"
-									id="totalSum"
-									{...register("totalSum", {
-										// value: docProps.totalSum,
-										onChange: () => handleChange(),
-									})}
-								/>
-								{errors.totalSum && (
-									<span className="required-field">
-										Обязательное поле
-									</span>
-								)}
-							</div>
-							{/* Дата создания*/}
-							<div className="col-md-2 mb-3">
-								<label htmlFor="agreement-date">
-									Дата создания
-								</label>
-								<input
-									type="date"
-									className="form-control"
-									id="date"
-									placeholder="1960-02-29"
-									{...register("date", {
-										// value: docProps.date,
-										onChange: () => handleChange(),
-										required: true,
-									})}
-								/>
-								{errors.date && (
-									<span className="required-field">
-										Обязательное поле
-									</span>
-								)}
-							</div>
-							{/* Номер договора */}
-							<div className="col-md-2 mb-3">
-								<label htmlFor="agreement-number">
-									Номер договора
-								</label>
-								<input
-									type="text"
-									className="form-control"
-									id="number"
-									placeholder="1"
-									list="freeNumbers"
-									{...register("number", {
-										// value: docProps.number,
-										onChange: () => handleChange(),
-										required: true,
-									})}
-								/>
-								{/* <span>
-									{unusedNumbersState.map((item) => {
-										return <span key={item}>{item}</span>
-									})}
-								</span> */}
-								<datalist id="freeNumbers">
-									{unusedNumbersState.map((item) => {
-										return <option key={item} value={item} />
-									})}
-								</datalist>
-							</div>
-
-						</div>
-						<div className="row">
-							{/* Вид оплаты */}
-							<div className="col-md-2 mb-3">
+							{/* Варианты заявлений */}
+							<div className="col-md-4 mb-3">
 								<div className="form-check">
-									<label htmlFor="payVariant">
-										При подписании
-									</label>
-									<input
-										type="radio"
-										className="form-check-input"
-										id="payVariant"
-										value="при подписании"
-										{...register("payVariant", {
-											// value: docProps.payVariant,
-											onChange: () => handleChange(),
-											required: true,
-										})}
-									/>
+									<label htmlFor="blockVariant">Вариант 1 (больше 500тыс., больше 3 мес.)</label>
+									<input type="radio" className="form-check-input" id="blockVariant" value="ВАРИАНТ01" {...register("blockVariant", {onChange: () => handleChange(), required: true,})}/>
 								</div>
 							</div>
-							<div className="col-md-2 mb-3">
+							<div className="col-md-4 mb-3">
 								<div className="form-check">
-									<label htmlFor="payVariant">
-										Не позднее
-									</label>
-									<input
-										type="radio"
-										className="form-check-input"
-										id="payVariant"
-										value="не позднее"
-										{...register("payVariant", {
-											// value: docProps.payVariant,
-											onChange: () => handleChange(),
-											required: true,
-										})}
-									/>
-								</div>
-							</div>
-
-							<div className="col-md-2 mb-3">
-								<div className="form-check">
-									<label htmlFor="payVariant">
-										График платежей
-									</label>
-									<input
-										type="radio"
-										className="form-check-input"
-										id="payVariant"
-										value="график платежей"
-										{...register("payVariant", {
-											// value: docProps.payVariant,
-											onChange: () => handleChange(),
-											required: true,
-										})}
-									/>
-								</div>
-							</div>
-
-							<div className="col-md-2 mb-3">
-								<div className="form-check">
-									<label htmlFor="payVariant">
-										После решения
-									</label>
-									<input
-										type="radio"
-										className="form-check-input"
-										id="payVariant"
-										value="после решения"
-										{...register("payVariant", {
-											// value: docProps.payVariant,
-											onChange: () => handleChange(),
-											required: true,
-										})}
-									/>
+									<label htmlFor="blockVariant">Вариант 2 (все остальные)</label>
+									<input type="radio" className="form-check-input" id="blockVariant" value="ВАРИАНТ02" {...register("blockVariant", {onChange: () => handleChange(), required: true,})}/>
 								</div>
 							</div>
 
@@ -506,6 +378,77 @@ function TemplateAgreement() {
 								</>
 							)}
 						</div>
+						<div className="row">
+							{/* Сумма */}
+							<div className="col-md-2 mb-3">
+								<label htmlFor="totalSum">Сумма</label>
+								<input
+									type="number"
+									className="form-control"
+									id="totalSum"
+									{...register("totalSum", {
+										// value: docProps.totalSum,
+										onChange: () => handleChange(),
+									})}
+								/>
+								{errors.totalSum && (
+									<span className="required-field">
+										Обязательное поле
+									</span>
+								)}
+							</div>
+							{/* Дата создания*/}
+							<div className="col-md-2 mb-3">
+								<label htmlFor="agreement-date">
+									Дата создания
+								</label>
+								<input
+									type="date"
+									className="form-control"
+									id="date"
+									placeholder="1960-02-29"
+									{...register("date", {
+										// value: docProps.date,
+										onChange: () => handleChange(),
+										required: true,
+									})}
+								/>
+								{errors.date && (
+									<span className="required-field">
+										Обязательное поле
+									</span>
+								)}
+							</div>
+							{/* Номер договора */}
+							<div className="col-md-2 mb-3">
+								<label htmlFor="agreement-number">
+									Номер договора
+								</label>
+								<input
+									type="text"
+									className="form-control"
+									id="number"
+									placeholder="1"
+									list="freeNumbers"
+									{...register("number", {
+										// value: docProps.number,
+										onChange: () => handleChange(),
+										required: true,
+									})}
+								/>
+								{/* <span>
+									{unusedNumbersState.map((item) => {
+										return <span key={item}>{item}</span>
+									})}
+								</span> */}
+								<datalist id="freeNumbers">
+									{unusedNumbersState.map((item) => {
+										return <option key={item} value={item} />
+									})}
+								</datalist>
+							</div>
+						</div>
+
 					</fieldset>
 				</form>
 			</div>
@@ -516,10 +459,12 @@ function TemplateAgreement() {
 				tokens={tokens}
 				docProps={docProps}
 				templateURLName={templateURLName}
-				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - Договор банкротство`}
+				docName={doc.name || `${person.lastName} ${person.firstName[0]}.${person.middleName[0]}. - Заявление о признании банкротом`}
+				logValues={logValues}
+				blockVariant={docProps.blockVariant}
 			/>
 		</>
 	);
 }
 
-export { TemplateAgreement };
+export { TemplateBankrotZayavlenie };

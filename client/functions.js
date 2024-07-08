@@ -70,7 +70,7 @@ function createTokens(data) {
 	data.birthPlace && tokensArray.push(["%МЕСТОРОЖДЕНИЯ%", data.birthPlace]);
 	data.passportSerie &&
 		tokensArray.push(["%ПАСПОРТСЕРИЯ%", data.passportSerie]);
-	data.pasportNumber &&
+	data.passportNumber &&
 		tokensArray.push(["%ПАСПОРТНОМЕР%", data.passportNumber]);
 	data.passportDate &&
 		tokensArray.push([
@@ -124,7 +124,7 @@ function createTokens(data) {
 	return tokensArray;
 }
 
-function fromTokensToResult(tokensArray, content, gender) {
+function fromTokensToResult(tokensArray, content, gender, blockVariant) {
 	// tokens replace
 	tokensArray.forEach((item) => {
 		content = content.replaceAll(item[0], item[1]);
@@ -144,8 +144,19 @@ function fromTokensToResult(tokensArray, content, gender) {
 
 	// (!regex.test(content) && content.includes('@')  || content.includes('%')) &&
 	// alert(`Кажется в шаблоне есть несработавшие токены`)
-	
-	return output;
+	const blockVariantDelete = new RegExp(`<p.*?<span lang="RU">&lt;\\[ВАРИАНТ(?!${blockVariant.slice(-2)})\\d{2}[\\s\\S]*?ВАРИАНТ(?!${blockVariant.slice(-2)})\\d{2}\\]&gt;<\/span><\/p>`, 'gm') //WORKING
+	output = output.replaceAll(blockVariantDelete, '')
+
+	const blockVariantCleanStart = new RegExp(`<p.*?<span lang="RU">&lt;\\[ВАРИАНТ${blockVariant.slice(-2)}`, 'gm')
+	const blockVariantCleanEnd = new RegExp(`ВАРИАНТ${blockVariant.slice(-2)}\\]&gt;.*<\/p>`, 'gm')
+
+	output = output.replaceAll(blockVariantCleanStart, '')
+	output = output.replaceAll(blockVariantCleanEnd, '')
+
+	/* 
+	LAST STOP  make regexp constructor
+	 */
+	return output
 }
 
 function getUnusedNumbers(arr) {
@@ -283,6 +294,17 @@ function paymentsSchedule(
 	return schedule;
   }  
 
+  function excelDateToJSDate(excelDate) {
+	const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
+	return date.toISOString().slice(0, 10); // date in 'YYYY-MM-DD' format
+  }
+
+  function convertHTMLentities(str) {
+	const dummy = document.createElement('div')
+	dummy.innerHTML = str
+	return dummy.textContent
+  }
+
 export {
 	getDataByIdFromURL,
 	deleteRub,
@@ -291,4 +313,6 @@ export {
 	getUnusedNumbers,
 	getCurrentYearNumbers,
 	paymentsSchedule,
+	excelDateToJSDate,
+	convertHTMLentities
 };

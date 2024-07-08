@@ -14,6 +14,7 @@ import Modal from '../components/Modal';
 import { BiSave,  } from "react-icons/bi"
 import { FaEdit, FaRegFileWord } from "react-icons/fa";
 import { RiDeleteBin2Line } from 'react-icons/ri'
+import { TbTerminal } from "react-icons/tb";
 import { TbTerminal2 } from "react-icons/tb";
 import { CiRead } from "react-icons/ci";
 
@@ -34,7 +35,7 @@ const SERVER_IP = process.env["SERVER_IP"];
 const TINYMCEPATH =
 	"https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js";
 
-function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templateURLName=null}) {
+function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=null, templateURLName=null, logValues=null, blockVariant=null}) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const person = useSelector((state) => state.personReducer.person);
@@ -42,7 +43,7 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 	const doc = useSelector((state) => state.docReducer);
 	const template = useSelector((state) => state.templateReducer);
 
-	const [templateData, setTemplateData] = useState(template);
+	const [templateData, setTemplateData] = useState(template || {});
 
 	const [contentBack, setContentBack] = useState();
 	const [dirty, setDirty] = useState(false);
@@ -50,6 +51,7 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 	const [destinationDocName, setDestinationDocName] = useState(docName);
 	const [modalActive, setModalActive] = useState(false)
 	const [key, setKey] = useState(0);
+	const [newIdChecked, setNewIdChecked] = useState(false)
 
 	console.log('documentMode:', documentMode)
 
@@ -69,10 +71,10 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 
 	const editorRef = useRef(null);
 
-	const log = (e) => {
+	const logContent = (e) => {
 		e.preventDefault();
 		if (editorRef.current) {
-			console.log("templateData", templateData);
+			console.log(editorRef.current.getContent());
 		}
 	};
 
@@ -87,7 +89,8 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 				content: fromTokensToResult(
 					tokens,
 					editorRef.current.getContent(),
-					person.gender
+					person.gender,
+					blockVariant
 				),
 			});
 		} else {
@@ -100,7 +103,36 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 		}
 	};
 
+	function newIdHandle() {
+		setNewIdChecked(!newIdChecked)
+	}
+
 	const saveDocTemp = async () => {
+		if (newIdChecked) {
+			if (confirm(`Будет создан новый шаблон с заданным именем и под новым id.`)) {
+				const data = {
+					...templateData,
+					templateURLName: templateURLName,
+					content: editorRef.current.getContent(),
+				}
+			try {
+				await axios
+					.post(
+						`${SERVER_IP}:${SERVER_PORT}/api/doctemplates/new`,
+						data
+					)
+					.then((item) => {
+						console.log(item.data)
+						alert(`Шаблон ${item.data.title} создан`);
+						setModalActive(false)
+					});
+			} catch (error) {
+				console.log(error);
+			}} else {
+				return
+			}
+			return
+		}
 		let templateExist;
 		const query = { title: templateData.title };
 		console.log(query)
@@ -218,8 +250,6 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 
 			console.log(query)
 			console.log(docExist.data)
-			
-			// return
 
 			let message;
 			docExist.data
@@ -234,15 +264,18 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 					// type: TODO
 					idTemplate: template._id,
 					type: templateData.type,
-					date: dayjs().format(),
+					date: docProps.date,
 					templateString: editorRef.current.getContent(),
 					templateResultString: fromTokensToResult(
 						tokens,
 						editorRef.current.getContent(),
 						person.gender
 					),
-					// docProps: '' // TODO What about docProps?
+					docProps: '' // TODO What about docProps?
 				};
+				console.log('data to save', data)
+				return
+				// saving is currently turned off
 			try {
 				await axios
 					.post(
@@ -325,8 +358,9 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 							<div className="page-buttons">
 								{!documentMode && 
 								<>
-									<button className="btn btn-primary btn-md btn-block btn-md" onClick={log} title="Log editor content"><TbTerminal2 /></button>
-									<button className="btn btn-primary btn-md btn-block btn-md" onClick={showResult} title={preview ? 'Режим редактирования' : 'Режим просмотра'}>
+									<button className="btn btn-primary btn-md btn-block" onClick={logContent} title="Log editor content"><TbTerminal /></button>
+									{logValues && <button className="btn btn-primary btn-md btn-block" onClick={logValues} title="Log form values"><TbTerminal2 /></button>}
+									<button className="btn btn-primary btn-md btn-block" onClick={showResult} title={preview ? 'Режим редактирования' : 'Режим просмотра'}>
 										{ preview === false ? <CiRead /> : <FaEdit /> }
 									</button>
 								</>
@@ -384,14 +418,12 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 								<div className="col-md-6 mb-3">
 									{/* КНОПКИ */}
 									{/*  */}
-									{templateData.content && (
-										<button
-											className="btn btn-primary btn-md btn-block btn-sm"
-											onClick={saveDocTemp}
-										>
-											Сохранить шаблон
-										</button>
-									)}
+									<button
+										className="btn btn-primary btn-md btn-block btn-sm"
+										onClick={saveDocTemp}
+									>
+										Сохранить шаблон
+									</button>
 									{/*  */}
 									{templateData.content && (
 										<button
@@ -401,7 +433,21 @@ function TinyEditorAndButtons({ docName, documentMode=false, tokens=null, templa
 											Удалить
 										</button>
 									)}
+									<input
+										onChange={newIdHandle}
+										className="form-check-input"
+										type="checkbox"
+										id='newId'
+										checked={newIdChecked}
+										title="создать шаблон с новым id"
+									/>
 								</div>
+{/* 								<div className="col-md-2 mb-3">
+									<label className="form-check-label" htmlFor='newId'>
+										new id
+									</label>
+
+								</div> */}
 							</div>
 						</div>
 					</Modal>

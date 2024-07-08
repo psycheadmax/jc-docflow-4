@@ -19,10 +19,12 @@ const Person = new Schema({
     description: String, // регистрации, проживания, почтовый etc
     index: String,
     subject: String,
-    settlement: String,
+    district: String,
     city: String,
+    settlement: String,
     street: String,
     building: String,
+    corp: String,
     appartment: String,
   }],
   phone: [{
