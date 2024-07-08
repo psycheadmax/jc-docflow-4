@@ -12,10 +12,13 @@ import {
 import { removeCaseActionCreator } from "../store/caseReducer";
 import axios from "axios";
 import { CheckBeforeCreate } from "../components/CheckBeforeCreate";
-import { getDataByIdFromURL } from "../functions";
+import { excelDateToJSDate, getDataByIdFromURL } from "../functions";
 import dayjs from "dayjs";
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+import * as XLSX from 'xlsx';
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, '.env') });
+const _ = require("lodash")
 
 const SERVER_PORT = process.env["SERVER_PORT"];
 const SERVER_IP = process.env["SERVER_IP"];
@@ -225,12 +228,70 @@ function PersonCard() {
 		reset(obj)
 	}
 
+	function importFromDogovorXLS(e) {
+		const file = e.target.files[0];
+		const reader = new FileReader();
+		reader.onload = (event) => {
+			const data = new Uint8Array(event.target.result);
+			const workbook = XLSX.read(data, { type: 'array' });
+			const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
+			const worksheet = workbook.Sheets[sheetName];
+			const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+			console.log('dogovor: ', jsonData)
+
+			const addresses = []
+				jsonData[12][2] !== '-' && ( addresses.push({
+					'description': 'регистрации',
+					'city': jsonData[12][2],
+					'street': jsonData[13][2],
+					'building': jsonData[14][2],
+					'appartment': jsonData[15][2]
+				}) )
+			
+			const phones = []
+				jsonData[17][2] !== '-' && ( phones.push({'description': jsonData[17][1].toLowerCase(), 'number': jsonData[17][2].replace(/\D/g, '')}) )
+				jsonData[18][2] !== '-'  && ( phones.push({'description': jsonData[18][1].toLowerCase(), 'number': jsonData[18][2].replace(/\D/g, '')}) )
+				jsonData[19][2] !== '-'  && ( phones.push({'description': jsonData[19][1].toLowerCase(), 'number': jsonData[19][2].replace(/\D/g, '')}) )
+
+				dayjs.extend(customParseFormat)
+			const dogovorDataObj = {
+				date: dayjs(excelDateToJSDate(jsonData[2][2])).format('YYYY-MM-DD'),
+				lastName: jsonData[3][2],
+				firstName: jsonData[4][2],
+				middleName: jsonData[5][2],
+				gender: jsonData[6][7].toLowerCase() === 'ж' ? 'жен' : 'муж',
+				birthDate: dayjs(jsonData[6][2].replace('г.', ''), 'DD.MM.YYYY').format('YYYY-MM-DD'),
+				birthPlace: jsonData[7][2],
+				passportSerie: jsonData[8][2].replaceAll(' ', ''),
+				passportNumber: jsonData[8][4],
+				passportDate: dayjs(jsonData[9][2].replace('г.', ''), 'DD.MM.YYYY').format('YYYY-MM-DD'),
+				passportPlace: jsonData[10][2],
+				passportCode: jsonData[11][2],
+				phone: phones,
+				address: addresses
+			}
+			console.log('getValues:', getValues())
+			console.log('dogovorDataObj:', dogovorDataObj)
+			const mergedPerson = _.merge(getValues(), dogovorDataObj)
+			reset(mergedPerson)
+		};
+		reader.readAsArrayBuffer(file);
+	}	
+
+	// LAST STOP db import export dump operations findout
+
 	return (
 		<div className="component">
 			<form onSubmit={handleSubmit(onSubmit)}>
 				<hr className="mb-4" />
 				{/* ФИО */}
 				<fieldset>
+				<div className="buttons">
+					<div className="col-sm-3 mb-3">
+						<label htmlFor="formFile">Выберите файл договор.xls для импорта (поля будут замещены)</label>
+						<input className="form-control-sm" type="file" id="formFile" onChange={importFromDogovorXLS} title='Выберите файл договор.xls для импорта' />
+					</div>
+				</div>					
 					<legend className="bg-light">ФИО</legend>
 					<div className="row">
 						{/* Фамилия */}
@@ -430,7 +491,7 @@ function PersonCard() {
 										id="address-type"
 										className="form-control"
 										list="descriptionList"
-										{...register(`address.${index}.type`, {
+										{...register(`address.${index}.description`, {
 											onChange: (e) => {
 												onChange(e, index);
 											},

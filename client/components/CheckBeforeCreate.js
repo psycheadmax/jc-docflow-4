@@ -8,6 +8,7 @@ const SERVER_PORT = process.env['SERVER_PORT']
 const SERVER_IP = process.env['SERVER_IP']
 
 function CheckBeforeCreate({receiveFromChild, whatToSearch}) {
+    console.log('whatToSearch:', whatToSearch)
     const [foundData, setFoundData] = useState([])
     const giveToParent = (obj) => {
         receiveFromChild(obj)
@@ -43,7 +44,6 @@ function CheckBeforeCreate({receiveFromChild, whatToSearch}) {
       }, [whatToSearch]);
 
     const len = foundData.length
-
     async function search() {     
         if (dataType) {
             await axios.post(`${SERVER_IP}:${SERVER_PORT}/api/${dataType}/search`, data).then(found => {
