@@ -36,9 +36,10 @@ function Header() {
 		dispatch(removeDocActionCreator())
 		if (location.pathname.startsWith('/persons')) {
 			navigate('/person')
-		}
-		if (location.pathname.startsWith('/docs/id')) {
+		} else if (location.pathname.startsWith('/docs/id')) {
 			navigate('/docs')
+		} else {
+			navigate('/search')
 		}
 	}
 

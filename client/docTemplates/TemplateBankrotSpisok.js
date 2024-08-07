@@ -26,6 +26,7 @@ import * as XLSX from 'xlsx';
 // import * as pdfjsLib from 'pdfjs-dist/webpack.mjs';
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker";
+import { hash } from 'crypto';
 
 
 const SERVER_PORT = process.env["SERVER_PORT"];
@@ -62,11 +63,6 @@ function TemplateBankrotSpisok() {
 		}
 		getTemplate()
 	}, []);
-
-// LAST STOP
-// method to easily create db string for template - LATER
-// method to get docProps from other docProps - LATER
-
 
 	const initialDocProps = {
 		prevnames: "",
@@ -549,7 +545,7 @@ function TemplateBankrotSpisok() {
 							<label htmlFor="p12kreditorsNePredprinPlat">{field.num} {field.numName}</label>
 							<div className="col-sm-3 mb-3"><input type="text" id="p12Fields-num" className="form-control" {...register(`p12kreditorsNePredprinPlat.${index}.num`, { onChange: () => handleChange() })} placeholder="№ п/п" /></div>
 							<div className="col-sm-2 mb-3"><input type="text" id="p12Fields-naimPlat" className="form-control" {...register(`p12kreditorsNePredprinPlat.${index}.naimPlat`, { onChange: () => handleChange() })} placeholder="Наименование налога, сбора или иного обязательного платежа" /></div>
-							<div className="col-sm-2 mb-3"><input type="text" id="p12Fields-nedoimka" className="form-control" {...register(`p12kreditorsNePredprinPlat.${index}.nedoimka`, { onChange: () => handleChange() })} placeholder="Недоимка" /></div>
+							<div className="col-sm-2 mb-3"><input type="number" id="p12Fields-nedoimka" className="form-control" {...register(`p12kreditorsNePredprinPlat.${index}.nedoimka`, { onChange: () => handleChange() })} placeholder="Недоимка" /></div>
 							<div className="col-sm-2 mb-3"><input type="text" id="p12Fields-shtrafPeni" className="form-control" {...register(`p12kreditorsNePredprinPlat.${index}.shtrafPeni`, { onChange: () => handleChange() })} placeholder="Штрафы, пени и иные санкции" /></div>
 							<div className="col-sm-1 mb-3"><button type="button" className="btn btn-outline-danger btn-sm btn-block" id="removeP12Fields" onClick={() => removeP12Fields(index)}>-</button></div>
 						</div>)})}

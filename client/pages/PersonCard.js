@@ -278,8 +278,6 @@ function PersonCard() {
 		reader.readAsArrayBuffer(file);
 	}	
 
-	// LAST STOP db import export dump operations findout
-
 	return (
 		<div className="component">
 			<form onSubmit={handleSubmit(onSubmit)}>

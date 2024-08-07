@@ -224,7 +224,8 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 		stringHTMLFinal += fromTokensToResult(
 			tokens,
 			editorRef.current.getContent(),
-			person.gender
+			person.gender,
+			blockVariant
 		);
 		stringHTMLFinal += `
 		</body>
@@ -248,9 +249,10 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 				console.error(error);
 			}
 
-			console.log(query)
-			console.log(docExist.data)
+			console.log('query', query)
+			console.log('docExist.data', docExist.data)
 
+			
 			let message;
 			docExist.data
 			? (message = `"${query.name}" уже существует.\nПерезаписать?`)
@@ -269,13 +271,16 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 					templateResultString: fromTokensToResult(
 						tokens,
 						editorRef.current.getContent(),
-						person.gender
+						person.gender,
+						blockVariant
 					),
-					docProps: '' // TODO What about docProps?
+					docProps: docProps // TODO What about docProps?
 				};
+				if (docExist.data) {
+					data._id = docExist.data._id
+				}
 				console.log('data to save', data)
-				return
-				// saving is currently turned off
+
 			try {
 				await axios
 					.post(
