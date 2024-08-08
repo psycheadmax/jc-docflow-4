@@ -57,7 +57,6 @@ function Cases() {
 
 	function newCase(e) {
 		e.preventDefault();
-		dispatch(removeCaseActionCreator())
 		navigate(`/cases/new`);
 	}
 

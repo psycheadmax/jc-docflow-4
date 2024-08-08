@@ -231,8 +231,8 @@ function TinyEditorAndButtons({ docName, docProps, documentMode=false, tokens=nu
 		</body>
 		</html>
 		`;
-
-		const converted = htmlDocx.asBlob(stringHTMLFinal);
+		const pageSetup = {orientation: 'portrait', margins: {top: 567, right: 567, bottom: 567, left: 720}} // default 1440 (twentieth of point), i.e. 2.54cm) 
+		const converted = htmlDocx.asBlob(stringHTMLFinal, pageSetup);
 		saveAs(converted, `${destinationDocName}.docx`);
 	};
 

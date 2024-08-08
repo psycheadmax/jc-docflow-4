@@ -24,10 +24,7 @@ function Header() {
 	const caseName = useSelector((state) => state.caseReducer);
 	const doc = useSelector((state) => state.docReducer);
 
-	console.log("person in redux: ", person);
-	console.log("caseName in redux: ", caseName);
-	console.log("template in redux: ", template);
-	console.log("doc in redux: ", doc);
+	console.log("person, case, template and doc in reduxState: ", person, caseName, template, doc);
 
 	function clearState() {
 		dispatch(removeActionCreator())
