@@ -53,13 +53,7 @@ function TempReceiptForm() {
 	const location = useLocation();
 	const [isExisting, _] = useState(location.pathname.startsWith("/docs/id"));
 
-	const personForPetrovich = {
-		first: person.firstName,
-		middle: person.middleName,
-		last: person.lastName,
-	};
-
-	const personGenitive = petrovich(personForPetrovich, "genitive");
+	const personGenitive = petrovich({ first: person.firstName, middle: person.middleName, last: person.lastName }, "genitive");
 
 	let nums = [];
 

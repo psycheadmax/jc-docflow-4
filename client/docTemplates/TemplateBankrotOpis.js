@@ -60,7 +60,7 @@ function TemplateBankrotOpis() {
 	}, []);
 
 	const initialDocProps = {
-		prevnames: "",
+		prevNames: "",
     	p1nedvizh: [],
     	p2dvizh: [],
     	p3banki: [],
@@ -1275,8 +1275,8 @@ function TemplateBankrotOpis() {
 					return (
 						<div className="row" key={field.id}>
 							<label htmlFor="p2-nedvizh">{field.num} {field.numName}</label>
-							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-vidMarka" className="form-control" {...register(`p2dvizh.${index}.vidMarka`, { onChange: () => handleChange() })} placeholder="Вид, марка, модель транспортного средства, год изготовления" readOnly/></div>
-							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-idNumber" className="form-control" {...register(`p2dvizh.${index}.idNumber`, { onChange: () => handleChange() })} placeholder="Вид собственности" /></div>
+							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-vidMarka" className="form-control" {...register(`p2dvizh.${index}.vidMarka`, { onChange: () => handleChange() })} placeholder="Вид, марка, модель транспортного средства, год изготовления"/></div>
+							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-idNumber" className="form-control" {...register(`p2dvizh.${index}.idNumber`, { onChange: () => handleChange() })} placeholder="Идентификационный номер" /></div>
 							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-vidSob" className="form-control" {...register(`p2dvizh.${index}.vidSob`, { onChange: () => handleChange() })} placeholder="Место нахождения/место хранения (адрес)" /></div>
 							<div className="col-md-1 mb-3"><input type="text" id="p2Fields-address" className="form-control" {...register(`p2dvizh.${index}.address`, { onChange: () => handleChange() })} placeholder="Стоимость" /></div>
 							<div className="col-md-3 mb-3"><input type="text" id="p2Fields-stoim" className="form-control" {...register(`p2dvizh.${index}.stoim`, { onChange: () => handleChange() })} placeholder="Основание приобретения и стоимость" /></div>

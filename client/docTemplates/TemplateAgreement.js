@@ -434,8 +434,8 @@ function TemplateAgreement() {
 											</span>
 										)}
 									</div>}
-									{/* Периодичность */}
 
+									{/* Периодичность */}
 									<div className="col-md-3 mb-3">
 										<label htmlFor="payPeriod">
 											{watch("payVariant") === 'график платежей' ? 'Периодичность платежей' : 'Через'}

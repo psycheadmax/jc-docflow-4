@@ -1,13 +1,13 @@
 const initialState = {
     case: {
-        caseTitle: "",
-		caseDate: "",
-		caseCategory: "",
-		caseReceivedDocs: [],
-		caseFlow: [],
-		caseReminder: [],
-		comment: "",
-        caseProps: {
+        // caseTitle: "",
+		// caseDate: "",
+		// caseCategory: "",
+		// caseReceivedDocs: [],
+		// caseFlow: [],
+		// caseReminder: [],
+		// comment: "",
+        // caseProps: {
             // agreement: {
             //     totalSum: 100,
             //     agreementDate: "",
@@ -18,7 +18,7 @@ const initialState = {
                 // 	payPeriod: String,
                 //  payPeriodMultiplier: Number,
             // }
-        }
+        // }
     }
 }
 

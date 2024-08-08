@@ -480,7 +480,7 @@ app.get("/api/docs/all", (req, res) => {
 app.post("/api/docs/search", (req, res) => {
 	const data = {
 		...req.body,
-	};
+	}
 	AnyDoc.find(data)
 		.populate("idPerson")
 		.populate("idCase")

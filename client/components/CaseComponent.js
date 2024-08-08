@@ -25,15 +25,19 @@ function CaseComponent() {
 	const caseRedux = useSelector((state) => state.caseReducer);
 	
 	async function getData(e) {
-		const data = (await getDataByIdFromURL("cases")) || emptyCase; // TODO calling now even if there no id (create instead)
+		const data = await getDataByIdFromURL("cases") || emptyCase; // TODO calling now even if there no id (create instead)
 		console.log("useEffect data: ", data);
-		dispatch(removeActionCreator())
-		dispatch(removeCaseActionCreator())
-		dispatch(captureActionCreator(data.idPerson))
-		delete data.idPerson;
-		dispatch(addCaseActionCreator(data)) 
-		data.caseDate = dayjs(data.caseDate).format("YYYY-MM-DD");
-		reset(data);
+		if (data.idPerson) { 
+			dispatch(removeActionCreator()) // - person
+			dispatch(removeCaseActionCreator()) // - case
+			dispatch(captureActionCreator(data.idPerson)) // + person from URL
+			delete data.idPerson; // - id from data
+			dispatch(addCaseActionCreator(data)) // + case
+			data.caseDate = dayjs(data.caseDate).format("YYYY-MM-DD"); // format case date
+		} else {
+			dispatch(removeCaseActionCreator()) // - case
+		}
+		reset(data); // paste all data
 	}
 	
 	useEffect(() => {
@@ -161,7 +165,6 @@ function CaseComponent() {
 	};
 
 	function onSubmit(data) {
-		console.log("onSubmit data", dataClone);
 		saveCase(data);
 	}
 
@@ -230,7 +233,7 @@ function CaseComponent() {
 							/>
 						</div>
 						{/* Case Received Docs */}
-						<fieldset>
+						{/* <fieldset>
 							<legend className="bg-light">
 								Принятые документы
 							</legend>
@@ -298,11 +301,11 @@ function CaseComponent() {
 							>
 								Добавить
 							</button>
-						</fieldset>
+						</fieldset> */}
 					</div>
 				</fieldset>
 				{/* Case Flow */}
-				<fieldset>
+				{/* <fieldset>
 					<legend className="bg-light">Движение дела</legend>
 					{caseFlowFields.map((field, index) => (
 						<div className="row" key={field.id}>
@@ -343,7 +346,6 @@ function CaseComponent() {
 								/>
 							</div>
 							<div className="col-md-1 mb-3">
-								{/* Delete button for caseFlow */}
 								<button
 									type="button"
 									className="btn btn-outline-danger btn-sm"
@@ -361,9 +363,9 @@ function CaseComponent() {
 					>
 						Добавить
 					</button>
-				</fieldset>
+				</fieldset> */}
 				{/* Case Reminder */}
-				<fieldset>
+				{/* <fieldset>
 					<legend className="bg-light">Напоминание</legend>
 					{caseReminderFields.map((field, index) => {
 						return (
@@ -381,10 +383,6 @@ function CaseComponent() {
 											`caseReminder.${index}.title`
 										)}
 									/>
-									{/* <span className="required-field">
-										Обязательное поле
-									</span> */}
-									{/* // TODO leave or remove? */}
 								</div>
 								<div className="col-md-2 mb-3">
 									<label htmlFor={`caseReminder-${index}`}>
@@ -453,7 +451,7 @@ function CaseComponent() {
 					>
 						Добавить
 					</button>
-				</fieldset>
+				</fieldset> */}
 				{/* КНОПКИ */}
 				<div className="footer-buttons">
 					{/*  */}
